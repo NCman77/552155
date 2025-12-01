@@ -290,7 +290,7 @@
             GAMES_ORDER: ['大樂透', '威力彩', '今彩539', '3星彩', '4星彩']
         };
 
-        // 學派文案 (保留原案 + 新增五行)
+        // 學派文案
         const schoolInfo = {
             stat: { 
                 color: "border-school-stat", 
@@ -329,12 +329,12 @@
                 filterYear: "",
                 filterMonth: "",
                 profiles: [],
-                user: null, // Firebase User
-                db: null // Firestore DB
+                user: null,
+                db: null
             },
 
             init() {
-                this.initFirebase(); // 初始化 Firebase
+                this.initFirebase(); 
                 this.updateDescription();
                 this.initFetch();
                 this.populateYearSelect();
@@ -348,31 +348,52 @@
                 document.getElementById('search-month').addEventListener('change', (e) => { this.state.filterMonth = e.target.value; this.updateDashboard(); });
             },
 
-            // === Firebase & Profile Logic ===
+            // === Firebase Logic ===
             async initFirebase() {
                 if (typeof window.firebaseModules === 'undefined') {
-                    this.loadProfilesLocal(); // Fallback
+                    this.loadProfilesLocal(); 
                     return;
                 }
-
                 const { initializeApp, getAuth, onAuthStateChanged, getFirestore } = window.firebaseModules;
                 
-                // 這裡需要您的 Firebase Config，若無則只使用 LocalStorage
-                if (typeof __firebase_config !== 'undefined') {
-                     const app = initializeApp(JSON.parse(__firebase_config));
-                     const auth = getAuth(app);
-                     this.state.db = getFirestore(app);
+                // ============================================================
+                // 🔥 請將 Firebase Console 的 Config 貼在下方括號中 🔥
+                // ============================================================
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-                     onAuthStateChanged(auth, (user) => {
-                        this.state.user = user;
-                        this.updateAuthUI(user);
-                        if (user) {
-                            this.loadProfilesCloud(user.uid);
-                        } else {
-                            this.loadProfilesLocal();
-                        }
-                     });
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBatltfrvZ5AXixdZBcruClqYrA-9ihsI0",
+    authDomain: "lottery-app-bd106.firebaseapp.com",
+    projectId: "lottery-app-bd106",
+    storageBucket: "lottery-app-bd106.firebasestorage.app",
+    messagingSenderId: "13138331714",
+    appId: "1:13138331714:web:194ac3ff9513d19d9845db"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
+                // ============================================================
+
+                if (firebaseConfig.apiKey) {
+                     try {
+                         const app = initializeApp(firebaseConfig);
+                         const auth = getAuth(app);
+                         this.state.db = getFirestore(app);
+                         onAuthStateChanged(auth, (user) => {
+                            this.state.user = user;
+                            this.updateAuthUI(user);
+                            if (user) this.loadProfilesCloud(user.uid);
+                            else this.loadProfilesLocal();
+                         });
+                     } catch(e) { console.error(e); this.loadProfilesLocal(); }
                 } else {
+                    console.warn("Firebase Config Missing, using local.");
                     this.loadProfilesLocal();
                 }
             },
@@ -402,12 +423,7 @@
                 const { getAuth, signInWithPopup, GoogleAuthProvider } = window.firebaseModules;
                 const auth = getAuth();
                 const provider = new GoogleAuthProvider();
-                try {
-                    await signInWithPopup(auth, provider);
-                } catch (e) {
-                    console.error(e);
-                    alert("登入失敗");
-                }
+                try { await signInWithPopup(auth, provider); } catch (e) { console.error(e); alert("登入失敗"); }
             },
 
             async logoutGoogle() {
@@ -421,15 +437,11 @@
             async loadProfilesCloud(uid) {
                 if (!this.state.db) return;
                 const { doc, getDoc } = window.firebaseModules;
-                // 假設使用預設 App ID 'lottery-app'
                 const ref = doc(this.state.db, 'artifacts', 'lottery-app', 'users', uid, 'profiles', 'main');
                 try {
                     const snap = await getDoc(ref);
-                    if (snap.exists()) {
-                        this.state.profiles = snap.data().list || [];
-                    } else {
-                        this.state.profiles = [];
-                    }
+                    if (snap.exists()) this.state.profiles = snap.data().list || [];
+                    else this.state.profiles = [];
                     this.renderProfileSelect();
                     this.renderProfileList();
                 } catch(e) { console.error("Cloud load error", e); }
@@ -450,10 +462,7 @@
             },
 
             saveProfiles() {
-                if (this.state.user) {
-                    this.saveProfilesCloud();
-                }
-                // Always save local as backup
+                if (this.state.user) this.saveProfilesCloud();
                 localStorage.setItem('lottery_profiles', JSON.stringify(this.state.profiles));
                 this.renderProfileSelect();
                 this.renderProfileList();
@@ -470,13 +479,7 @@
                 const constellation = this.getConstellation(date.getMonth() + 1, date.getDate());
 
                 this.state.profiles.push({
-                    id: Date.now(),
-                    name,
-                    birth,
-                    time: document.getElementById('new-time').value,
-                    realname,
-                    zodiac,
-                    constellation
+                    id: Date.now(), name, birth, time: document.getElementById('new-time').value, realname, zodiac, constellation
                 });
                 this.saveProfiles();
                 
@@ -534,7 +537,7 @@
             getZodiac(year) { const animals = ['猴','雞','狗','豬','鼠','牛','虎','兔','龍','蛇','馬','羊']; return animals[year % 12]; },
             getConstellation(m, d) { const s = "摩羯水瓶雙魚牡羊金牛雙子巨蟹獅子處女天秤天蠍射手摩羯"; const arr = [20,19,21,21,21,22,23,23,23,23,22,22]; return s.substr(m*2 - (d < arr[m-1] ? 2 : 0), 2) + "座"; },
 
-            // ... (以下 populateYearSelect, initFetch, renderGameTabs, resetFilter, updateDashboard, renderHistoryList, renderHotStats, selectSchool, updateDescription 保持 V21.5 邏輯) ...
+            // ... (populateYearSelect, initFetch, renderGameTabs, resetFilter, updateDashboard, renderHistoryList, renderHotStats 保持 V21.5 邏輯) ...
             
             populateYearSelect() { const yearSelect = document.getElementById('search-year'); for (let y = 2021; y <= 2030; y++) { const opt = document.createElement('option'); opt.value = y; opt.innerText = `${y} 年`; yearSelect.appendChild(opt); } },
             async initFetch() { const statusText = document.getElementById('status-text'); const statusDot = document.getElementById('status-dot'); const statusPing = document.getElementById('status-ping'); if (window.location.protocol === 'blob:' || window.location.protocol === 'file:') { statusText.innerText = "⚠️ 預覽模式 (無資料)"; statusPing.classList.add("hidden"); this.renderGameTabs([]); return; } statusText.innerText = "連線雲端資料庫..."; try { const response = await fetch(`${CONFIG.JSON_URL}?t=${new Date().getTime()}`); if (!response.ok) throw new Error("Cloud data missing"); const fullData = await response.json(); if (fullData.games) { this.state.rawData = fullData.games; this.state.rawJackpots = fullData.jackpots || {}; } else { this.state.rawData = fullData; this.state.rawJackpots = {}; } for (let game in this.state.rawData) { this.state.rawData[game] = this.state.rawData[game].map(item => { item.date = new Date(item.date); return item; }); } statusText.innerText = `✅ 系統就緒 (共 ${Object.keys(this.state.rawData).length} 種玩法)`; statusText.className = "text-sm font-bold text-school-balance"; statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-school-balance"; statusPing.classList.add("hidden"); if(fullData.last_updated) { document.getElementById('last-update-time').innerText = `更新：${fullData.last_updated.split(' ')[0]}`; } this.renderGameTabs(Object.keys(this.state.rawData)); document.getElementById('dashboard-area').classList.remove('hidden'); document.getElementById('strategy-area').classList.remove('hidden'); } catch (e) { console.error(e); statusText.innerText = "⚠️ 無法讀取資料"; statusText.className = "text-sm font-bold text-red-500"; statusPing.classList.add("hidden"); this.renderGameTabs([]); } },
