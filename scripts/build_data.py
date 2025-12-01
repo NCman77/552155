@@ -13,7 +13,7 @@ OUTPUT_FILE = os.path.join(DATA_DIR, 'lottery-data.json')
 HISTORY_YEARS = [2021, 2022, 2023, 2024, 2025]
 API_BASE = 'https://api.taiwanlottery.com/TLCAPIWeB/Lottery'
 
-# 遊戲代碼對照表 (Key: 顯示名稱, Value: API代碼)
+# 遊戲代碼對照表
 GAMES = {
     '大樂透': 'Lotto649',
     '威力彩': 'SuperLotto638',
@@ -29,11 +29,10 @@ JACKPOT_URLS = {
     '威力彩': 'https://www.taiwanlottery.com/lotto/result/super_lotto638'
 }
 
-# 瀏覽器偽裝標頭 (解決 API 阻擋問題)
+# 瀏覽器偽裝標頭 (依照您測試成功的設定優化)
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
     'Referer': 'https://www.taiwanlottery.com/',
     'Origin': 'https://www.taiwanlottery.com'
 }
@@ -52,10 +51,8 @@ def get_jackpot_amount(game_name):
     try:
         res = requests.get(url, headers=HEADERS, timeout=15)
         if res.status_code != 200: 
-            print(f"Jackpot page fetch failed: {res.status_code}")
             return None
         
-        # 針對您提供的 HTML 結構進行正則匹配
         # 尋找 <div ... class="amount-number" ...>數字</div>
         matches = re.findall(r'class="amount-number"[^>]*>(\d)</div>', res.text)
         
@@ -81,7 +78,6 @@ def parse_csv_line(line):
     cols = [c.strip().replace('"', '') for c in line.split(',')]
     if len(cols) < 5: return None
     
-    # 判斷遊戲名稱
     game_name = cols[0].strip()
     matched_game = None
     for g in GAMES:
@@ -90,7 +86,7 @@ def parse_csv_line(line):
             break
     if not matched_game: return None
 
-    # 日期解析 (支援 112/1/1, 112-01-01 等格式)
+    # 日期解析
     date_str = cols[2].strip()
     match = re.search(r'(\d{3,4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})', date_str)
     
@@ -99,14 +95,13 @@ def parse_csv_line(line):
         y = int(match.group(1))
         m = int(match.group(2))
         d = int(match.group(3))
-        if y < 1911: y += 1911 # 民國轉西元
+        if y < 1911: y += 1911
         final_date = f"{y}-{m:02d}-{d:02d}"
     else:
         return None
 
     try:
         numbers = []
-        # 智能尋找獎號：從第6欄開始，只要是1-99的數字就納入
         for i in range(5, len(cols)): 
             val = cols[i].strip()
             if val.isdigit():
@@ -114,7 +109,6 @@ def parse_csv_line(line):
                 if 0 <= n <= 99:
                     numbers.append(n)
         
-        # 資料完整性檢查
         if len(numbers) < 2: return None
 
         return {
@@ -137,7 +131,6 @@ def load_history():
     for year in HISTORY_YEARS:
         zip_path = os.path.join(DATA_DIR, f'{year}.zip')
         if not os.path.exists(zip_path): 
-            print(f"Skipping {year}.zip (Not Found)")
             continue
             
         try:
@@ -147,7 +140,6 @@ def load_history():
                         with z.open(filename) as f:
                             raw = f.read()
                             content = ""
-                            # 自動嘗試多種編碼，解決亂碼問題
                             for enc in ['cp950', 'utf-8-sig', 'utf-8', 'big5']:
                                 try:
                                     content = raw.decode(enc)
@@ -155,14 +147,10 @@ def load_history():
                                 except: continue
                             
                             if content:
-                                lines = content.splitlines()
-                                count = 0
-                                for line in lines:
+                                for line in content.splitlines():
                                     parsed = parse_csv_line(line)
                                     if parsed:
                                         db[parsed['game']].append(parsed['data'])
-                                        count += 1
-                                print(f"  Loaded {count} rows from {filename} ({year})")
         except Exception as e:
             print(f"Error reading {year}.zip: {e}")
     return db
@@ -171,8 +159,8 @@ def fetch_api(db):
     """ 從台彩 API 抓取最新資料 """
     print("=== Fetching Live API ===")
     
-    # 決定要抓幾個月：如果歷史資料很少，就抓過去12個月補齊；否則只抓近3個月
     has_data = any(len(db[g]) > 0 for g in GAMES)
+    # 這裡可以根據需求調整，如果是首次執行建議抓多一點 (12個月)
     fetch_months = 12 if not has_data else 3
     
     today = datetime.date.today()
@@ -181,23 +169,23 @@ def fetch_api(db):
         d = today - datetime.timedelta(days=i*30)
         months.append(d.strftime('%Y-%m'))
     
-    # 去重並排序月份
     months = sorted(list(set(months)))
     print(f"Target months: {months}")
     
     for game_name, code in GAMES.items():
         existing_keys = set(f"{d['date']}_{d['period']}" for d in db[game_name])
-        print(f"Processing {game_name}...")
+        print(f"Processing {game_name} ({code})...")
         
         for m in months:
-            url = f"{API_BASE}/{code}Result?period&month={m}&pageNum=1&pageSize=50"
+            # === 關鍵修改：移除 period 參數，只保留 month ===
+            url = f"{API_BASE}/{code}Result?month={m}&pageNum=1&pageSize=50"
+            
             try:
                 res = requests.get(url, headers=HEADERS, timeout=30)
                 if res.status_code != 200:
                     print(f"  [API Fail] {url} -> {res.status_code}")
                     continue
                 
-                # 安全解析 JSON
                 try:
                     data = res.json()
                 except:
@@ -206,36 +194,29 @@ def fetch_api(db):
 
                 if 'content' not in data: continue
                 
-                # 模糊搜尋列表 Key (解決大小寫不一致問題, e.g. daily539ResulDtoList)
+                # 模糊搜尋列表 Key
                 target_list = []
                 for k, v in data['content'].items():
-                    # 只要 key 包含 'ResulDtoList' 且 value 是陣列，就當作是目標
                     if isinstance(v, list) and 'ResulDtoList' in k:
                         target_list = v
                         break
                 
                 if not target_list:
-                    print(f"  [Info] No data list found in response for {m}")
                     continue
 
                 new_count = 0
                 for item in target_list:
-                    # 處理日期格式
                     date_raw = item['lotteryDate']
                     date_str = date_raw.split('T')[0] if 'T' in date_raw else date_raw
                     key = f"{date_str}_{item['period']}"
                     
                     if key not in existing_keys:
                         nums = []
-                        # 智能抓取所有號碼欄位
                         for k, v in item.items():
-                            # 欄位名包含 no 或 win，且值為整數
                             if ('no' in k.lower() or 'win' in k.lower()) and isinstance(v, int):
-                                # 排除 sno (特別號) 和 period (期數)
                                 if k.lower() not in ['sno', 'period', 'periodno', 'superno']:
                                     if v > 0: nums.append(v)
                         
-                        # 特別號另外抓
                         if item.get('sNo'): nums.append(int(item['sNo']))
                         
                         if len(nums) > 0:
@@ -251,25 +232,22 @@ def fetch_api(db):
                 if new_count > 0:
                     print(f"  + Added {new_count} new records for {m}")
                 
-                time.sleep(0.5) # 避免請求過快
+                time.sleep(0.3)
             except Exception as e:
                 print(f"  [Exception] {game_name} {m}: {e}")
 
 def save_data(db):
-    """ 整合並儲存資料 """
     print("=== Saving Data ===")
     jackpots = {}
     
-    # 抓取頭獎金額
+    # 抓取頭獎
     for game in JACKPOT_URLS:
         amount = get_jackpot_amount(game)
         if amount:
             jackpots[game] = amount
 
-    # 排序資料
     total_records = 0
     for game in db:
-        # 按日期降序排列 (最新的在前面)
         db[game].sort(key=lambda x: x['date'], reverse=True)
         total_records += len(db[game])
         
@@ -294,7 +272,6 @@ def main():
         save_data(db)
     except Exception as e:
         print(f"❌ Critical Error: {e}")
-        # 災難恢復：建立空檔案避免前端報錯
         if not os.path.exists(OUTPUT_FILE):
             with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
                 json.dump({"games":{}, "jackpots":{}}, f)
