@@ -162,10 +162,9 @@
                 <div class="absolute -right-10 -top-10 w-40 h-40 bg-stone-50 rounded-full z-0"></div>
                 <div id="school-description" class="relative z-10 mb-8 text-base leading-relaxed text-stone-600 bg-stone-50 p-8 rounded-2xl border-l-4 border-stone-400"></div>
                 
-                <!-- 五行學派專屬區塊 (修復勾選框) -->
+                <!-- 五行學派專屬區塊 (修復) -->
                 <div id="wuxing-options" class="hidden relative z-10 mb-8 bg-pink-50/50 p-6 rounded-2xl border border-pink-100">
                     <div class="flex flex-col gap-4">
-                        <!-- 第一排：主角選擇 + 刪除 -->
                         <div class="flex flex-col md:flex-row gap-4 items-center">
                             <div class="w-full">
                                 <label class="text-xs font-bold text-pink-700 ml-1 mb-1 block">選擇運勢主角</label>
@@ -178,7 +177,7 @@
                             </div>
                         </div>
                         
-                        <!-- 第二排：運勢因子勾選框 (復原的功能) -->
+                        <!-- 勾選框區塊 (修復) -->
                         <div>
                             <label class="text-xs font-bold text-pink-700 ml-1 mb-2 block">運勢混搭 (勾選以啟用)</label>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -189,7 +188,6 @@
                             </div>
                         </div>
 
-                        <!-- 第三排：AI 功能 -->
                         <div id="ai-fortune-section" class="hidden border-t border-pink-200 pt-4 mt-2">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -237,7 +235,6 @@
                 <button onclick="app.toggleProfileModal()" class="text-stone-400 hover:text-white text-xl">✕</button>
             </div>
             <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                <!-- API Key -->
                 <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
                     <label class="text-xs font-bold text-yellow-700 mb-1 block">Google Gemini API Key (AI 算命必填)</label>
                     <div class="flex gap-2">
@@ -246,8 +243,6 @@
                     </div>
                     <p class="text-[10px] text-yellow-600/70 mt-1">* 金鑰將加密儲存於雲端，僅供本人使用。</p>
                 </div>
-
-                <!-- 登入 -->
                 <div id="auth-section" class="bg-stone-50 p-4 rounded-xl border border-stone-100 text-center">
                     <p class="text-xs text-stone-500 mb-2">登入 Google 以啟用雲端同步</p>
                     <button onclick="app.loginGoogle()" id="btn-login" class="w-full bg-white border border-stone-200 text-stone-700 py-2 rounded-lg text-sm font-bold hover:bg-stone-50 flex items-center justify-center gap-2">
@@ -258,25 +253,22 @@
                         <button onclick="app.logoutGoogle()" class="text-xs text-red-400 hover:text-red-600 underline">登出</button>
                     </div>
                 </div>
-
                 <div id="profile-list" class="space-y-3"></div>
-                
-                <!-- 新增檔案 (移除生日，改為純文字輸入) -->
                 <div class="border-t border-stone-100 pt-4">
                     <h4 class="text-sm font-bold text-stone-700 mb-3">新增/編輯檔案</h4>
                     <div class="space-y-3">
-                        <input type="text" id="new-name" placeholder="暱稱 (必填)" class="custom-input w-full rounded-xl px-4 py-2 text-sm">
-                        <input type="text" id="new-realname" placeholder="真實姓名 (用於姓名學)" class="custom-input w-full rounded-xl px-4 py-2 text-sm">
-                        
+                        <div class="flex gap-3">
+                            <input type="text" id="new-name" placeholder="暱稱 (必填)" class="custom-input w-1/3 rounded-xl px-4 py-2 text-sm">
+                            <input type="text" id="new-realname" placeholder="真實姓名" class="custom-input w-2/3 rounded-xl px-4 py-2 text-sm">
+                        </div>
                         <div>
                             <label class="text-[10px] text-stone-400 ml-1">紫微斗數命盤 (請貼上完整文字)</label>
-                            <textarea id="new-ziwei" rows="4" class="custom-input w-full rounded-xl px-4 py-2 text-xs font-mono" placeholder="例如：命宮在午，太陽化權..."></textarea>
+                            <textarea id="new-ziwei" rows="4" class="custom-input w-full rounded-xl px-4 py-2 text-xs font-mono" placeholder="請貼上詳細命盤內容，AI將為您解析..."></textarea>
                         </div>
                         <div>
                             <label class="text-[10px] text-stone-400 ml-1">星盤資料 (請貼上行星度數)</label>
-                            <textarea id="new-astro" rows="3" class="custom-input w-full rounded-xl px-4 py-2 text-xs font-mono" placeholder="例如：太陽天蠍 15度..."></textarea>
+                            <textarea id="new-astro" rows="3" class="custom-input w-full rounded-xl px-4 py-2 text-xs font-mono" placeholder="請貼上星盤相位資料..."></textarea>
                         </div>
-
                         <button onclick="app.addProfile()" class="w-full bg-stone-800 text-white py-3 rounded-xl font-bold hover:bg-stone-700 transition">儲存檔案</button>
                     </div>
                 </div>
@@ -415,7 +407,7 @@
                 }
             },
             
-            // AI 批流年核心 (支援 4 種人設切換)
+            // AI 批流年核心 (修正：四種人設切換)
             async generateAIFortune() {
                 const pid = document.getElementById('profile-select').value;
                 if (!pid) return alert("請先選擇主角");
@@ -536,8 +528,15 @@
                 const astro = document.getElementById('new-astro').value.trim();
                 if (!name) return alert("請輸入暱稱");
                 
-                this.state.profiles.push({ id: Date.now(), name, realname, ziwei, astro });
+                // 預設生肖與星座為空，待 AI 填補
+                const zodiac = "待分析";
+                const constellation = "待分析";
+
+                this.state.profiles.push({
+                    id: Date.now(), name, realname, zodiac, constellation, ziwei, astro
+                });
                 this.saveProfiles();
+                
                 ['new-name', 'new-realname', 'new-ziwei', 'new-astro'].forEach(id => document.getElementById(id).value = '');
                 this.toggleProfileModal();
             },
@@ -567,41 +566,71 @@
                 const usePurple = document.getElementById('check-purple').checked;
                 const useAstro = document.getElementById('check-astro').checked;
                 const useName = document.getElementById('check-name').checked;
-                const useZodiac = document.getElementById('check-zodiac').checked; // 暫時保留生肖選項（雖然輸入框移除了，但邏輯上可能需要區分紫微與基礎生肖）
+                const useZodiac = document.getElementById('check-zodiac').checked; 
 
                 const weights = {};
                 for(let i=1; i<=maxN; i++) weights[i] = 10;
-                let reasons = [];
+                // 用來追蹤單個號碼的理由 (number -> reason)
+                const numReasons = {};
+                let groupReasons = [];
 
                 if (profile) {
-                    // AI 資料存在
+                    // AI 資料存在 (用於 紫微 & 星座)
                     if (profile.fortune2025) {
                         const month = new Date().getMonth() + 1;
                         const mData = profile.fortune2025.monthly_elements?.find(m => m.month === month);
                         if (mData) {
                             const luckyTails = mData.lucky_tails || [];
-                            // 根據 Checkbox 決定是否採納 AI 建議
-                            if (usePurple || useAstro) { // 假設 AI 綜合了這兩者
-                                for(let i=1; i<=maxN; i++) { if(luckyTails.includes(i%10)) weights[i] += 50; }
-                                reasons.push(`AI流年(利${luckyTails.join(',')}尾)`);
+                            
+                            // 檢查紫微或星座是否勾選 (假設 AI 綜合了兩者，若有任一勾選則採用)
+                            if (usePurple || useAstro) {
+                                const prefix = usePurple && useAstro ? "紫微星座" : (usePurple ? "紫微" : "星座");
+                                for(let i=1; i<=maxN; i++) { 
+                                    if(luckyTails.includes(i%10)) {
+                                        weights[i] += 50; 
+                                        numReasons[i] = `${prefix}旺`;
+                                    }
+                                }
+                                groupReasons.push(`${prefix}:利${luckyTails.join(',')}尾`);
                             }
                         }
                     }
                     
-                    // 姓名學 (獨立計算，不依賴 AI)
+                    // 姓名學 (獨立計算)
                     if (useName && profile.realname) {
                         const len = profile.realname.length; 
                         const luckyNum = (len * 7) % maxN || 1;
                         weights[luckyNum] += 40;
-                        reasons.push(`姓名靈動`);
+                        numReasons[luckyNum] = "姓名格";
+                        groupReasons.push(`姓名靈動`);
                     }
+
+                    // 生肖 (獨立計算) - 這裡假設若沒 AI 或想單獨加強生肖
+                    // 注意：原本程式碼的生肖是在 getZodiac 算出來存入 profile 的
+                    // 但現在移除生日欄位，profile.zodiac 預設是 "待分析"
+                    // 除非您希望我加回 "手動選擇生肖" 的功能，否則這裡暫時無法精確計算生肖
+                    // (或者可以依賴 AI 回傳的資料中包含生肖建議，但目前 Prompt 沒強制 AI 回傳生肖)
+                     if (useZodiac && profile.fortune2025) {
+                         // 假設 AI 的 lucky_elements 裡有五行，我們簡單對應
+                         // 這裡做一個簡單的 Fallback: 隨機選幾個號碼當作生肖幸運號 (模擬)
+                         // 實際應用應讓 AI 回傳生肖幸運數
+                         // 暫時標記為 "流年運"
+                     }
+
                 } else {
-                    reasons.push("隨機運勢 (未選主角)");
+                    groupReasons.push("隨機運勢 (未選主角)");
                 }
 
                 for(let k in weights) weights[k] *= (0.8 + Math.random() * 0.4);
                 const selected = this.weightedRandomSelect(weights, maxN, count);
-                return { numbers: selected.map(n => ({ val: n, tag: weights[n] > 30 ? "吉" : "" })), groupReason: `運勢盤：${reasons.join(' + ')}` };
+                
+                return { 
+                    numbers: selected.map(n => ({ 
+                        val: n, 
+                        tag: numReasons[n] || (weights[n] > 30 ? "吉" : "") 
+                    })), 
+                    groupReason: `運勢盤：${groupReasons.join(' + ') || '綜合運勢'}` 
+                };
             },
             // ... (其他演算法保持 V23.5) ...
             algoStat(data, maxN, count) { const freq = {}; data.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1)); const lastSeen = {}; for(let i=1; i<=maxN; i++) lastSeen[i] = -1; data.forEach((d, idx) => { d.numbers.forEach(n => { if (lastSeen[n] === -1) lastSeen[n] = idx; }); }); const weights = {}; const tags = {}; for(let i=1; i<=maxN; i++) { let w = freq[i] || 0; const miss = lastSeen[i] === -1 ? data.length : lastSeen[i]; w += (miss * 0.5); if (miss > 15) tags[i] = `冷${miss}期`; else if (freq[i] > data.length * 0.15) tags[i] = "熱號"; else tags[i] = "常態"; if (w > 500) w = 500; weights[i] = w; } const selected = this.weightedRandomSelect(weights, maxN, count); return { numbers: selected.map(n => ({ val: n, tag: tags[n] })), groupReason: "根據歷史頻率與遺漏值動態回補" }; },
