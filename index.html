@@ -27,11 +27,7 @@
                     colors: {
                         stone: { 50:'#fafaf9', 100:'#f5f5f4', 200:'#e7e5e4', 600:'#57534e', 700:'#44403c', 800:'#292524' },
                         school: {
-                            stat: '#64748b',    
-                            pattern: '#7c3aed', 
-                            balance: '#059669', 
-                            ai: '#d97706',
-                            wuxing: '#be185d'
+                            stat: '#64748b', pattern: '#7c3aed', balance: '#059669', ai: '#d97706', wuxing: '#be185d'
                         }
                     }
                 }
@@ -62,12 +58,14 @@
         .table-row { transition: background-color 0.2s; } .table-row:hover { background-color: #fafaf9; }
         .spinner { border: 3px solid rgba(0,0,0,0.1); border-radius: 50%; border-top: 3px solid #be185d; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .rotate-180 { transform: rotate(180deg); }
     </style>
 </head>
 <body class="p-4 md:p-8 min-h-screen flex flex-col font-medium">
 
     <div class="max-w-6xl mx-auto w-full relative">
         
+        <!-- Header -->
         <div class="flex justify-between items-start mb-8">
             <div class="flex-1"></div>
             <div class="text-center flex-1">
@@ -85,29 +83,22 @@
             </div>
         </div>
 
-        <!-- 狀態列 -->
-        <div class="bg-white rounded-2xl p-5 shadow-sm mb-8 border border-stone-100 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <span class="relative flex h-3 w-3">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-stone-400 opacity-75" id="status-ping"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-stone-500" id="status-dot"></span>
-                </span>
-                <span class="text-sm font-bold text-stone-600 tracking-wide" id="status-text">系統待命中...</span>
-            </div>
-            <div class="text-xs text-stone-400 font-bold bg-stone-50 px-3 py-1 rounded-full" id="last-update-time">等待更新</div>
-        </div>
+        <!-- 舊狀態列已移除 -->
 
         <!-- 遊戲選擇器 -->
-        <div class="mb-10 overflow-x-auto hide-scrollbar pb-2">
+        <div class="mb-6 overflow-x-auto hide-scrollbar pb-2">
             <div class="flex gap-4 justify-center min-w-max px-2" id="game-tabs-container">
                 <div class="game-tab active">載入中...</div>
             </div>
         </div>
 
-        <!-- 儀表板區域 -->
+        <!-- 儀表板區域 (預設隱藏，但JS會開啟) -->
         <div id="dashboard-area" class="hidden animate-[fadeIn_0.6s_ease-out]">
+            
+            <!-- 整合資訊卡片 -->
             <div class="bg-white rounded-3xl p-6 shadow-md border border-stone-100 mb-8 relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-2 h-full bg-stone-800"></div>
+                
                 <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8 pl-4">
                     <div class="flex flex-col gap-1">
                         <div class="flex items-center gap-3">
@@ -120,29 +111,82 @@
                             <span class="text-2xl font-black text-yellow-600 font-sans tracking-tight" id="jackpot-amount">$ --</span>
                         </div>
                     </div>
-                    <div class="text-sm text-stone-400 text-right font-medium bg-stone-50 px-4 py-2 rounded-xl">
-                        <div class="mb-1">資料庫：<span id="total-count" class="text-stone-700 font-bold text-lg">0</span> 期</div>
-                        <div class="text-xs">區間：<span id="date-range">...</span></div>
+                    
+                    <!-- 整合後的狀態資訊區 (System Status) -->
+                    <div class="text-sm text-stone-500 text-right font-medium bg-stone-50 px-5 py-3 rounded-xl border border-stone-100">
+                        <div class="mb-1 flex items-center justify-end gap-2">
+                            <span id="system-status-icon" class="w-2 h-2 rounded-full bg-stone-300"></span>
+                            <span id="system-status-text">系統連線中...</span>
+                        </div>
+                        <div class="mb-1">資料庫：<span id="total-count" class="text-stone-800 font-bold">0</span> 期</div>
+                        <div class="text-xs text-stone-400 mb-1">區間：<span id="date-range">...</span></div>
+                        <div class="text-[10px] text-stone-300 uppercase font-bold" id="last-update-time">WAITING UPDATE</div>
                     </div>
                 </div>
-                <div class="bg-stone-50 rounded-2xl p-5 border border-stone-200 flex flex-col lg:flex-row gap-4 items-end lg:items-center">
-                    <div class="flex-1 w-full"><label class="text-xs font-bold text-stone-400 ml-1">期數</label><input type="text" id="search-period" placeholder="輸入期號" class="custom-input w-full rounded-xl px-4 py-3 text-base font-bold"></div>
-                    <div class="flex-1 w-full flex gap-3"><div class="w-1/2"><label class="text-xs font-bold text-stone-400 ml-1">年</label><select id="search-year" class="custom-input custom-select w-full rounded-xl px-4 py-3 text-base font-bold cursor-pointer"><option value="">年份</option></select></div><div class="w-1/2"><label class="text-xs font-bold text-stone-400 ml-1">月</label><select id="search-month" class="custom-input custom-select w-full rounded-xl px-4 py-3 text-base font-bold cursor-pointer"><option value="">月份</option><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div></div>
-                    <button onclick="app.resetFilter()" class="text-sm font-bold text-stone-400 hover:text-stone-600 underline px-4 py-3">重置</button>
+
+                <!-- 搜尋與過濾區 -->
+                <div class="bg-stone-50 rounded-2xl p-5 border border-stone-200">
+                    <div class="flex flex-col lg:flex-row gap-4 items-end lg:items-center">
+                        <div class="flex flex-col gap-1.5 w-full sm:w-auto">
+                            <label class="text-xs font-bold text-stone-400 ml-1">期數查詢</label>
+                            <div class="relative w-full sm:w-48"> 
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">#</span>
+                                <input type="text" id="search-period" placeholder="輸入期號" class="custom-input w-full rounded-xl pl-8 pr-4 py-3 text-base font-bold placeholder-stone-400">
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5 w-full sm:w-auto flex-1">
+                            <label class="text-xs font-bold text-stone-400 ml-1">日期篩選</label>
+                            <div class="flex gap-3">
+                                <div class="relative w-full sm:w-1/2">
+                                    <select id="search-year" class="custom-input custom-select w-full rounded-xl px-4 py-3 text-base font-bold cursor-pointer appearance-none">
+                                        <option value="">選擇年份</option>
+                                    </select>
+                                </div>
+                                <div class="relative w-full sm:w-1/2">
+                                    <select id="search-month" class="custom-input custom-select w-full rounded-xl px-4 py-3 text-base font-bold cursor-pointer appearance-none">
+                                        <option value="">選擇月份</option>
+                                        <option value="1">1 月</option>
+                                        <option value="2">2 月</option>
+                                        <option value="3">3 月</option>
+                                        <option value="4">4 月</option>
+                                        <option value="5">5 月</option>
+                                        <option value="6">6 月</option>
+                                        <option value="7">7 月</option>
+                                        <option value="8">8 月</option>
+                                        <option value="9">9 月</option>
+                                        <option value="10">10 月</option>
+                                        <option value="11">11 月</option>
+                                        <option value="12">12 月</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="app.resetFilter()" class="text-sm font-bold text-stone-400 hover:text-stone-600 underline whitespace-nowrap px-4 py-3 h-full flex items-center">
+                            清除重置
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="stat-box"><h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">🔥 年度熱門 <span class="text-stone-300" id="year-label">Year</span></h4><div id="stat-year" class="flex flex-wrap gap-3 justify-center"></div></div>
-                <div class="stat-box"><h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">📅 本月熱門 <span class="text-stone-300" id="month-label">Month</span></h4><div id="stat-month" class="flex flex-wrap gap-3 justify-center"></div></div>
-                <div class="stat-box"><h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">⚡ 近期熱勢 <span class="text-stone-300">Trend</span></h4><div id="stat-recent" class="flex flex-wrap gap-3 justify-center"></div></div>
-            </div>
-            <div class="bg-white rounded-3xl shadow-md border border-stone-100 overflow-hidden mb-12">
-                <div class="bg-stone-50 px-6 py-4 border-b border-stone-200 flex justify-between items-center"><h4 class="font-black text-stone-700 text-lg flex items-center gap-2"><span>📅 歷史開獎</span></h4><span class="text-xs font-bold text-stone-400 bg-white px-3 py-1 rounded-lg border border-stone-200 shadow-sm" id="list-info">近 5 期</span></div>
-                <div class="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar p-2"><table class="w-full text-left"><thead class="text-sm font-bold text-stone-400 uppercase"><tr><th class="px-6 py-4 rounded-xl bg-white sticky top-0 z-10 w-48">期別</th><th class="px-6 py-4 rounded-xl bg-white sticky top-0 z-10">號碼</th></tr></thead><tbody id="history-list" class="divide-y divide-stone-100"></tbody></table></div>
-                <div id="no-result-msg" class="hidden text-center py-12 text-stone-400 font-bold">沒有符合資料</div>
-            </div>
-        </div>
 
+            <!-- 統計方塊 (保留在上方) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="stat-box">
+                    <h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">🔥 年度熱門 <span class="text-stone-300" id="year-label">Year</span></h4>
+                    <div id="stat-year" class="flex flex-wrap gap-3 justify-center"></div>
+                </div>
+                <div class="stat-box">
+                    <h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">📅 本月熱門 <span class="text-stone-300" id="month-label">Month</span></h4>
+                    <div id="stat-month" class="flex flex-wrap gap-3 justify-center"></div>
+                </div>
+                <div class="stat-box">
+                    <h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">⚡ 近期熱勢 <span class="text-stone-300">Trend</span></h4>
+                    <div id="stat-recent" class="flex flex-wrap gap-3 justify-center"></div>
+                </div>
+            </div>
+
+        </div> <!-- End Dashboard Top -->
+
+        <!-- 戰術流派選擇 (對調至中間) -->
         <div id="strategy-area" class="hidden animate-[fadeIn_0.8s_ease-out]">
             <div class="flex items-center gap-4 mb-6">
                 <div class="h-px bg-stone-300 flex-1"></div>
@@ -158,11 +202,10 @@
                 <div class="school-card school-wuxing p-5 relative" onclick="app.selectSchool('wuxing')"><div class="flex items-center gap-2 mb-2"><div class="text-2xl">🔮</div><h4 class="font-bold">五行生肖</h4></div><p class="text-xs opacity-70">個人運勢</p><div class="absolute top-4 right-4 w-2 h-2 rounded-full bg-current opacity-0" id="dot-wuxing"></div></div>
             </div>
 
-            <div class="bg-white rounded-3xl p-8 shadow-lg border border-stone-100 relative overflow-hidden">
+            <div class="bg-white rounded-3xl p-8 shadow-lg border border-stone-100 relative overflow-hidden mb-12">
                 <div class="absolute -right-10 -top-10 w-40 h-40 bg-stone-50 rounded-full z-0"></div>
                 <div id="school-description" class="relative z-10 mb-8 text-base leading-relaxed text-stone-600 bg-stone-50 p-8 rounded-2xl border-l-4 border-stone-400"></div>
                 
-                <!-- 五行學派專屬區塊 -->
                 <div id="wuxing-options" class="hidden relative z-10 mb-8 bg-pink-50/50 p-6 rounded-2xl border border-pink-100">
                     <div class="flex flex-col gap-4">
                         <div class="flex flex-col md:flex-row gap-4 items-center">
@@ -176,18 +219,12 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- 勾選框區塊 (修復回歸) -->
-                        <div>
-                            <label class="text-xs font-bold text-pink-700 ml-1 mb-2 block">運勢混搭 (勾選以啟用)</label>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100 hover:border-pink-300 transition"><input type="checkbox" id="check-purple" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">紫微斗數</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100 hover:border-pink-300 transition"><input type="checkbox" id="check-astro" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">西洋星盤</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100 hover:border-pink-300 transition"><input type="checkbox" id="check-name" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">姓名靈動</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100 hover:border-pink-300 transition"><input type="checkbox" id="check-zodiac" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">生肖運勢</span></label>
-                            </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100 hover:border-pink-300 transition"><input type="checkbox" id="check-purple" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">紫微斗數</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100 hover:border-pink-300 transition"><input type="checkbox" id="check-astro" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">西洋星盤</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100 hover:border-pink-300 transition"><input type="checkbox" id="check-name" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">姓名靈動</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100 hover:border-pink-300 transition"><input type="checkbox" id="check-zodiac" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">生肖運勢</span></label>
                         </div>
-
                         <div id="ai-fortune-section" class="hidden border-t border-pink-200 pt-4 mt-2">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -224,6 +261,30 @@
                 <div id="result-area" class="mt-10 hidden border-t border-stone-100 pt-10"><h4 class="text-center font-bold text-stone-400 mb-8 text-sm tracking-widest uppercase">推薦號碼組合 (附帶分析理由)</h4><div id="prediction-output" class="space-y-4"></div></div>
             </div>
         </div>
+
+        <!-- 歷史列表 (移至最下方 + 收合功能) -->
+        <div class="bg-white rounded-3xl shadow-md border border-stone-100 overflow-hidden mb-12 animate-[fadeIn_1s_ease-out]">
+            <div class="bg-stone-50 px-6 py-4 border-b border-stone-200 flex justify-between items-center cursor-pointer hover:bg-stone-100 transition" onclick="app.toggleHistory()">
+                <h4 class="font-black text-stone-700 text-lg flex items-center gap-2"><span>📅 歷史開獎記錄</span></h4>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-stone-400 bg-white px-3 py-1 rounded-lg border border-stone-200 shadow-sm" id="list-info">顯示近 5 期</span>
+                    <span id="history-arrow" class="text-stone-400 text-xl transition-transform transform rotate-0">▼</span>
+                </div>
+            </div>
+            <!-- 預設隱藏 (max-h-0) -->
+            <div id="history-container" class="max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                <div class="overflow-x-auto p-2">
+                    <table class="w-full text-left">
+                        <thead class="text-sm font-bold text-stone-400 uppercase">
+                            <tr><th class="px-6 py-4 rounded-xl bg-white sticky top-0 z-10 w-48">期別資訊</th><th class="px-6 py-4 rounded-xl bg-white sticky top-0 z-10">開出號碼</th></tr>
+                        </thead>
+                        <tbody id="history-list" class="divide-y divide-stone-100"></tbody>
+                    </table>
+                </div>
+                <div id="no-result-msg" class="hidden text-center py-12 text-stone-400 font-bold">沒有符合資料</div>
+            </div>
+        </div>
+
         <div class="text-center mt-12 text-xs text-stone-300 font-bold pb-4">DESIGNED FOR LOTTERY ANALYSIS</div>
     </div>
 
@@ -235,6 +296,7 @@
                 <button onclick="app.toggleProfileModal()" class="text-stone-400 hover:text-white text-xl">✕</button>
             </div>
             <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                <!-- API Key -->
                 <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
                     <label class="text-xs font-bold text-yellow-700 mb-1 block">Google Gemini API Key (AI 算命必填)</label>
                     <div class="flex gap-2">
@@ -243,6 +305,8 @@
                     </div>
                     <p class="text-[10px] text-yellow-600/70 mt-1">* 金鑰將加密儲存於雲端，僅供本人使用。</p>
                 </div>
+
+                <!-- 登入 -->
                 <div id="auth-section" class="bg-stone-50 p-4 rounded-xl border border-stone-100 text-center">
                     <p class="text-xs text-stone-500 mb-2">登入 Google 以啟用雲端同步</p>
                     <button onclick="app.loginGoogle()" id="btn-login" class="w-full bg-white border border-stone-200 text-stone-700 py-2 rounded-lg text-sm font-bold hover:bg-stone-50 flex items-center justify-center gap-2">
@@ -253,7 +317,10 @@
                         <button onclick="app.logoutGoogle()" class="text-xs text-red-400 hover:text-red-600 underline">登出</button>
                     </div>
                 </div>
+
                 <div id="profile-list" class="space-y-3"></div>
+                
+                <!-- 新增檔案 -->
                 <div class="border-t border-stone-100 pt-4">
                     <h4 class="text-sm font-bold text-stone-700 mb-3">新增/編輯檔案</h4>
                     <div class="space-y-3">
@@ -261,6 +328,7 @@
                             <input type="text" id="new-name" placeholder="暱稱 (必填)" class="custom-input w-1/3 rounded-xl px-4 py-2 text-sm">
                             <input type="text" id="new-realname" placeholder="真實姓名" class="custom-input w-2/3 rounded-xl px-4 py-2 text-sm">
                         </div>
+                        <!-- 詳細文字輸入區 -->
                         <div>
                             <label class="text-[10px] text-stone-400 ml-1">紫微斗數命盤 (請貼上完整文字)</label>
                             <textarea id="new-ziwei" rows="4" class="custom-input w-full rounded-xl px-4 py-2 text-xs font-mono" placeholder="請貼上詳細命盤內容，AI將為您解析..."></textarea>
@@ -324,6 +392,7 @@
                 document.getElementById('search-year').addEventListener('change', (e) => { this.state.filterYear = e.target.value; this.updateDashboard(); });
                 document.getElementById('search-month').addEventListener('change', (e) => { this.state.filterMonth = e.target.value; this.updateDashboard(); });
             },
+            
             async initFirebase() {
                 if (typeof window.firebaseModules === 'undefined') { this.loadProfilesLocal(); return; }
                 const { initializeApp, getAuth, onAuthStateChanged, getFirestore, getDoc, doc } = window.firebaseModules;
@@ -337,25 +406,23 @@
                   appId: "1:13138331714:web:194ac3ff9513d19d9845db"
                 };
 
-                if (firebaseConfig.apiKey) {
-                     try {
-                         const app = initializeApp(firebaseConfig);
-                         const auth = getAuth(app);
-                         this.state.db = getFirestore(app);
-                         onAuthStateChanged(auth, async (user) => {
-                            this.state.user = user; this.updateAuthUI(user);
-                            if (user) {
-                                await this.loadProfilesCloud(user.uid);
-                                const ref = doc(this.state.db, 'artifacts', 'lottery-app', 'users', user.uid, 'settings', 'api');
-                                const snap = await getDoc(ref);
-                                if(snap.exists()) {
-                                    this.state.apiKey = snap.data().key;
-                                    document.getElementById('gemini-api-key').value = this.state.apiKey;
-                                }
-                            } else { this.loadProfilesLocal(); }
-                         });
-                     } catch(e) { console.error(e); this.loadProfilesLocal(); }
-                } else { console.warn("Firebase Config Missing"); this.loadProfilesLocal(); }
+                try {
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    this.state.db = getFirestore(app);
+                    onAuthStateChanged(auth, async (user) => {
+                    this.state.user = user; this.updateAuthUI(user);
+                    if (user) {
+                        await this.loadProfilesCloud(user.uid);
+                        const ref = doc(this.state.db, 'artifacts', 'lottery-app', 'users', user.uid, 'settings', 'api');
+                        const snap = await getDoc(ref);
+                        if(snap.exists()) {
+                            this.state.apiKey = snap.data().key;
+                            document.getElementById('gemini-api-key').value = this.state.apiKey;
+                        }
+                    } else { this.loadProfilesLocal(); }
+                    });
+                } catch(e) { console.error(e); this.loadProfilesLocal(); }
             },
             updateAuthUI(user) {
                 const loginBtn = document.getElementById('btn-login'); const userInfo = document.getElementById('user-info');
@@ -406,7 +473,6 @@
                 }
             },
             
-            // AI 批流年核心 (修正：四種人設切換)
             async generateAIFortune() {
                 const pid = document.getElementById('profile-select').value;
                 if (!pid) return alert("請先選擇主角");
@@ -447,7 +513,7 @@
                     
                     請直接回傳一個 JSON 物件 (不要 Markdown，不要解釋)，格式如下：
                     {
-                        "year_analysis": "簡短的一句話流年總評",
+                        "year_analysis": "詳細的流年運勢總評 (約 100 字，包含事業、財運與操作建議)",
                         "monthly_elements": [
                              {"month": 1, "lucky_elements": ["火", "土"], "lucky_tails": [2, 7], "avoid": "水"},
                              ... (1到12月)
@@ -488,17 +554,18 @@
                     return; 
                 }
                 
-                // 選擇人之後，顯示 AI 區塊
                 aiSection.classList.remove('hidden');
 
                 const profile = this.state.profiles.find(p => p.id == pid);
                 if (profile && profile.fortune2025) {
-                    status.innerText = `✅ 已有 2025 流年數據 (${profile.fortune2025.year_analysis})`;
-                    status.className = "text-xs text-green-600 mt-1 font-bold";
+                    status.innerText = `✅ 已有 2025 流年數據 (請點擊查看詳情)`;
+                    status.onclick = () => alert(profile.fortune2025.year_analysis); 
+                    status.className = "text-xs text-green-600 mt-1 font-bold cursor-pointer underline";
                     btn.innerText = "🔄 重新批算";
                     btnClear.classList.remove('hidden');
                 } else {
                     status.innerText = "尚未計算流年";
+                    status.onclick = null;
                     status.className = "text-xs text-pink-600 mt-1";
                     btn.innerText = "✨ 啟動大師批流年";
                     btnClear.classList.add('hidden');
@@ -514,7 +581,6 @@
                     this.onProfileChange();
                 }
             },
-            
             clearFortune() {
                 const pid = document.getElementById('profile-select').value;
                 if(!pid) return;
@@ -525,6 +591,19 @@
                         this.saveProfiles();
                         this.onProfileChange();
                     }
+                }
+            },
+            toggleHistory() {
+                const container = document.getElementById('history-container');
+                const arrow = document.getElementById('history-arrow');
+                if (container.classList.contains('max-h-0')) {
+                    container.classList.remove('max-h-0');
+                    container.classList.add('max-h-[1000px]');
+                    arrow.classList.add('rotate-180');
+                } else {
+                    container.classList.add('max-h-0');
+                    container.classList.remove('max-h-[1000px]');
+                    arrow.classList.remove('rotate-180');
                 }
             },
 
@@ -547,7 +626,46 @@
             renderProfileList() { const list = document.getElementById('profile-list'); list.innerHTML = this.state.profiles.length === 0 ? '<p class="text-sm text-stone-400 text-center">尚無檔案</p>' : ''; this.state.profiles.forEach(p => { list.innerHTML += `<div class="flex justify-between items-center bg-stone-50 p-3 rounded-xl border border-stone-100"><div><div class="font-bold text-stone-700">${p.name} <span class="text-[10px] text-stone-400">(${p.realname || '未填名'})</span></div><div class="text-xs text-stone-400 text-stone-400/70">命盤資料:${p.ziwei?'有':'無'} / 星盤:${p.astro?'有':'無'}</div></div><button onclick="app.deleteProfile(${p.id})" class="text-red-400 text-sm hover:text-red-600">刪除</button></div>`; }); },
             renderProfileSelect() { const sel = document.getElementById('profile-select'); sel.innerHTML = '<option value="">請選擇運勢主角...</option>'; this.state.profiles.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.innerText = `${p.name}`; sel.appendChild(opt); }); },
             populateYearSelect() { const yearSelect = document.getElementById('search-year'); for (let y = 2021; y <= 2030; y++) { const opt = document.createElement('option'); opt.value = y; opt.innerText = `${y} 年`; yearSelect.appendChild(opt); } },
-            async initFetch() { const statusText = document.getElementById('status-text'); const statusDot = document.getElementById('status-dot'); const statusPing = document.getElementById('status-ping'); if (window.location.protocol === 'blob:' || window.location.protocol === 'file:') { statusText.innerText = "⚠️ 預覽模式 (無資料)"; statusPing.classList.add("hidden"); this.renderGameTabs([]); return; } statusText.innerText = "連線雲端資料庫..."; try { const response = await fetch(`${CONFIG.JSON_URL}?t=${new Date().getTime()}`); if (!response.ok) throw new Error("Cloud data missing"); const fullData = await response.json(); if (fullData.games) { this.state.rawData = fullData.games; this.state.rawJackpots = fullData.jackpots || {}; } else { this.state.rawData = fullData; this.state.rawJackpots = {}; } for (let game in this.state.rawData) { this.state.rawData[game] = this.state.rawData[game].map(item => { item.date = new Date(item.date); return item; }); } statusText.innerText = `✅ 系統就緒 (共 ${Object.keys(this.state.rawData).length} 種玩法)`; statusText.className = "text-sm font-bold text-school-balance"; statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-school-balance"; statusPing.classList.add("hidden"); if(fullData.last_updated) { document.getElementById('last-update-time').innerText = `更新：${fullData.last_updated.split(' ')[0]}`; } this.renderGameTabs(Object.keys(this.state.rawData)); document.getElementById('dashboard-area').classList.remove('hidden'); document.getElementById('strategy-area').classList.remove('hidden'); } catch (e) { console.error(e); statusText.innerText = "⚠️ 無法讀取資料"; statusText.className = "text-sm font-bold text-red-500"; statusPing.classList.add("hidden"); this.renderGameTabs([]); } },
+            async initFetch() { 
+                const statusText = document.getElementById('system-status-text'); 
+                const statusIcon = document.getElementById('system-status-icon');
+                
+                if (window.location.protocol === 'blob:' || window.location.protocol === 'file:') { 
+                    // 預覽模式處理
+                    document.getElementById('dashboard-area').classList.remove('hidden');
+                    document.getElementById('strategy-area').classList.remove('hidden');
+                    this.renderGameTabs([]); 
+                    statusText.innerText = "預覽模式 (無資料)";
+                    statusIcon.className = "w-2 h-2 rounded-full bg-stone-300";
+                    return; 
+                } 
+                
+                // 正常模式：顯示 Dashboard 並開始載入
+                document.getElementById('dashboard-area').classList.remove('hidden');
+                document.getElementById('strategy-area').classList.remove('hidden');
+                
+                try { 
+                    const response = await fetch(`${CONFIG.JSON_URL}?t=${new Date().getTime()}`); 
+                    if (!response.ok) throw new Error("Cloud data missing"); 
+                    const fullData = await response.json(); 
+                    if (fullData.games) { this.state.rawData = fullData.games; this.state.rawJackpots = fullData.jackpots || {}; } 
+                    else { this.state.rawData = fullData; this.state.rawJackpots = {}; } 
+                    for (let game in this.state.rawData) { this.state.rawData[game] = this.state.rawData[game].map(item => { item.date = new Date(item.date); return item; }); } 
+                    
+                    statusText.innerText = "系統連線正常";
+                    statusText.className = "text-xs font-bold text-green-600";
+                    statusIcon.className = "w-2 h-2 rounded-full bg-green-500";
+
+                    if(fullData.last_updated) { document.getElementById('last-update-time').innerText = `更新：${fullData.last_updated.split(' ')[0]}`; } 
+                    this.renderGameTabs(Object.keys(this.state.rawData)); 
+                } catch (e) { 
+                    console.error(e); 
+                    statusText.innerText = "連線失敗";
+                    statusText.className = "text-xs font-bold text-red-500";
+                    statusIcon.className = "w-2 h-2 rounded-full bg-red-500";
+                    this.renderGameTabs([]); 
+                } 
+            },
             renderGameTabs(availableGames) { const container = document.getElementById('game-tabs-container'); container.innerHTML = ''; if (availableGames.length === 0) { container.innerHTML = '<div class="game-tab">等待資料...</div>'; return; } const sortedGames = availableGames.sort((a, b) => { const idxA = CONFIG.GAMES_ORDER.indexOf(a); const idxB = CONFIG.GAMES_ORDER.indexOf(b); return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB); }); const finalGames = sortedGames.filter(g => CONFIG.GAMES_ORDER.includes(g)); if (finalGames.length > 0 && !this.state.currentGame) { this.state.currentGame = finalGames[0]; this.updateDashboard(); } finalGames.forEach(game => { const btn = document.createElement('div'); btn.className = `game-tab ${game === this.state.currentGame ? 'active' : ''}`; btn.innerText = game; btn.onclick = () => { this.state.currentGame = game; this.resetFilter(); document.querySelectorAll('.game-tab').forEach(el => el.classList.remove('active')); btn.classList.add('active'); this.updateDashboard(); }; container.appendChild(btn); }); },
             resetFilter() { this.state.filterPeriod = ""; this.state.filterYear = ""; this.state.filterMonth = ""; document.getElementById('search-period').value = ""; document.getElementById('search-year').value = ""; document.getElementById('search-month').value = ""; this.updateDashboard(); },
             updateDashboard() { if (!this.state.rawData[this.state.currentGame]) return; let data = this.state.rawData[this.state.currentGame]; if (this.state.filterPeriod) { data = data.filter(item => String(item.period).includes(this.state.filterPeriod)); } if (this.state.filterYear) { data = data.filter(item => item.date.getFullYear() === parseInt(this.state.filterYear)); } if (this.state.filterMonth) { data = data.filter(item => (item.date.getMonth() + 1) === parseInt(this.state.filterMonth)); } document.getElementById('current-game-title').innerText = this.state.currentGame; document.getElementById('total-count').innerText = data.length; const listInfo = document.getElementById('list-info'); const noResult = document.getElementById('no-result-msg'); if (data.length > 0) { noResult.classList.add('hidden'); document.getElementById('latest-period').innerText = `${data[0].period}期`; const lastDate = data[0].date.toLocaleDateString(); const firstDate = data[data.length-1].date.toLocaleDateString(); document.getElementById('date-range').innerText = `${firstDate} ~ ${lastDate}`; this.renderHotStats('stat-year', data); this.renderHotStats('stat-month', data.slice(0, 30)); this.renderHotStats('stat-recent', data.slice(0, 10)); const jackpotEl = document.getElementById('jackpot-container'); const amountEl = document.getElementById('jackpot-amount'); if (this.state.rawJackpots[this.state.currentGame] && !this.state.filterPeriod && !this.state.filterYear && !this.state.filterMonth) { jackpotEl.classList.remove('hidden'); amountEl.innerText = `$${this.state.rawJackpots[this.state.currentGame]}`; } else { jackpotEl.classList.add('hidden'); } const isFiltering = this.state.filterPeriod || this.state.filterYear || this.state.filterMonth; listInfo.innerText = isFiltering ? `搜尋結果: ${data.length} 筆` : "顯示近 5 期"; this.renderHistoryList(isFiltering ? data : data.slice(0, 5)); } else { noResult.classList.remove('hidden'); this.renderHistoryList([]); document.getElementById('stat-year').innerHTML = ''; document.getElementById('stat-month').innerHTML = ''; document.getElementById('stat-recent').innerHTML = ''; } },
@@ -558,7 +676,6 @@
             runPrediction() { if(!this.state.currentGame || !this.state.rawData[this.state.currentGame]) return; const data = this.state.rawData[this.state.currentGame]; const ballsPerDraw = Math.round(data.reduce((a,b)=>a+b.numbers.length,0)/data.length); let maxN = 0; data.forEach(d => d.numbers.forEach(n => { if(n > maxN) maxN = n; })); const setSize = parseInt(document.querySelector('input[name="count"]:checked').value); const container = document.getElementById('prediction-output'); container.innerHTML = ''; document.getElementById('result-area').classList.remove('hidden'); for(let i=0; i<setSize; i++) { let result = null; switch(this.state.currentSchool) { case 'stat': result = this.algoStat(data, maxN, ballsPerDraw); break; case 'pattern': result = this.algoPattern(data, maxN, ballsPerDraw); break; case 'balance': result = this.algoBalance(data, maxN, ballsPerDraw); break; case 'ai': result = this.algoAI(data, maxN, ballsPerDraw); break; case 'wuxing': result = this.algoWuxing(data, maxN, ballsPerDraw); break; } if (result) this.renderRow(result, i+1); } },
             renderRow(resultObj, index) { const container = document.getElementById('prediction-output'); const colors = { stat: 'bg-stone-200 text-stone-700', pattern: 'bg-purple-100 text-purple-700', balance: 'bg-emerald-100 text-emerald-800', ai: 'bg-amber-100 text-amber-800', wuxing: 'bg-pink-100 text-pink-800' }; const colorClass = colors[this.state.currentSchool]; let html = `<div class="flex flex-col gap-3 p-5 bg-white rounded-2xl border border-stone-200 shadow-sm animate-fade-in hover:shadow-md transition"><div class="flex items-center gap-3"><span class="text-xs font-black text-stone-300 tracking-widest">SET ${index}</span><div class="flex flex-wrap gap-2">`; resultObj.numbers.forEach(item => { html += `<div class="flex flex-col items-center"><div class="ball ${colorClass}" style="box-shadow: none;">${item.val}</div>${item.tag ? `<div class="reason-tag">${item.tag}</div>` : ''}</div>`; }); html += `</div></div>`; if (resultObj.groupReason) { html += `<div class="text-xs text-stone-500 font-medium bg-stone-50 px-3 py-2 rounded-lg border border-stone-100 flex items-center gap-2"><span class="text-lg">💡</span> ${resultObj.groupReason}</div>`; } html += `</div>`; container.innerHTML += html; },
 
-            // 五行學派 - 修復版 (含基礎邏輯與 AI 整合)
             algoWuxing(data, maxN, count) {
                 const pid = document.getElementById('profile-select').value;
                 let profile = null;
@@ -575,23 +692,14 @@
                 let groupReasons = [];
 
                 if (profile) {
-                    // 1. 生肖 (基礎版：沒有 AI 時也運作)
-                    // 由於移除了生日欄位，這裡我們假設 "待分析"
-                    // 如果想讓生肖功能運作，必須依賴 AI 解析出的生肖資訊，或者使用者手動選擇生肖
-                    // 但目前介面沒有手動選擇，所以這裡是一個「AI 優先」的設計
-                    // 如果 AI 算過，profile.fortune2025 裡可能會有生肖資訊 (取決於 Prompt)
-                    
-                    // 2. AI 流年 (紫微 + 星座 + 生肖)
                     if (profile.fortune2025) {
                         const month = new Date().getMonth() + 1;
                         const mData = profile.fortune2025.monthly_elements?.find(m => m.month === month);
                         if (mData) {
                             const luckyTails = mData.lucky_tails || [];
-                            const luckyElems = mData.lucky_elements || [];
                             
                             if (usePurple || useAstro || useZodiac) {
                                 for(let i=1; i<=maxN; i++) { 
-                                    // 尾數加權
                                     if(luckyTails.includes(i%10)) {
                                         weights[i] += 50;
                                         numReasons[i] = "流年旺";
@@ -601,10 +709,7 @@
                             }
                         }
                     } else if (useZodiac || usePurple || useAstro) {
-                        // 沒有 AI 資料時的 Fallback
-                        // 隨機選幾個號碼作為「模擬」 (為了避免空白)
                         groupReasons.push("基礎命理(建議啟用AI)");
-                        // 簡單加權：日期尾數
                         const todayTail = new Date().getDate() % 10;
                         for(let i=1; i<=maxN; i++) {
                             if (i % 10 === todayTail) {
@@ -614,7 +719,6 @@
                         }
                     }
                     
-                    // 3. 姓名學 (獨立計算)
                     if (useName && profile.realname) {
                         const len = profile.realname.length; 
                         const luckyNum = (len * 7) % maxN || 1;
@@ -638,7 +742,6 @@
                     groupReason: `運勢盤：${groupReasons.join(' + ') || '綜合運勢'}` 
                 };
             },
-            // ... (其他演算法不變) ...
             algoStat(data, maxN, count) { const freq = {}; data.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1)); const lastSeen = {}; for(let i=1; i<=maxN; i++) lastSeen[i] = -1; data.forEach((d, idx) => { d.numbers.forEach(n => { if (lastSeen[n] === -1) lastSeen[n] = idx; }); }); const weights = {}; const tags = {}; for(let i=1; i<=maxN; i++) { let w = freq[i] || 0; const miss = lastSeen[i] === -1 ? data.length : lastSeen[i]; w += (miss * 0.5); if (miss > 15) tags[i] = `冷${miss}期`; else if (freq[i] > data.length * 0.15) tags[i] = "熱號"; else tags[i] = "常態"; if (w > 500) w = 500; weights[i] = w; } const selected = this.weightedRandomSelect(weights, maxN, count); return { numbers: selected.map(n => ({ val: n, tag: tags[n] })), groupReason: "根據歷史頻率與遺漏值動態回補" }; },
             algoPattern(data, maxN, count) { if(data.length < 2) return this.algoStat(data, maxN, count); const lastDraw = data[0].numbers; const nextDrawCounts = {}; const relationMap = {}; const tailCounts = {}; data.slice(0, 10).forEach(d => { d.numbers.forEach(n => { const tail = n % 10; tailCounts[tail] = (tailCounts[tail] || 0) + 1; }); }); const hotTail = Object.entries(tailCounts).sort((a,b)=>b[1]-a[1])[0][0]; for(let i=1; i<data.length; i++) { const intersection = data[i].numbers.filter(n => lastDraw.includes(n)); if(intersection.length > 0) { data[i-1].numbers.forEach(n => { nextDrawCounts[n] = (nextDrawCounts[n]||0) + intersection.length; if (!relationMap[n]) relationMap[n] = intersection[0]; }); } } if(Object.keys(nextDrawCounts).length === 0) return this.algoStat(data, maxN, count); for(let k in nextDrawCounts) { if (k % 10 == hotTail) nextDrawCounts[k] *= 1.5; nextDrawCounts[k] *= (0.9 + Math.random() * 0.2); } const selected = this.weightedRandomSelect(nextDrawCounts, maxN, count); return { numbers: selected.map(n => ({ val: n, tag: relationMap[n] ? `由${relationMap[n]}拖牌` : (n%10==hotTail ? `${hotTail}尾強勢` : '關聯') })), groupReason: `上期[${lastDraw.slice(0,3).join(',')}]拖牌 + ${hotTail}尾數趨勢融合` }; },
             algoBalance(data, maxN, count) { let bestSet = []; let minScore = 99999; let bestInfo = {}; const zoneCounts = [0,0,0,0,0]; data.slice(0, 30).forEach(d => { d.numbers.forEach(n => { if(n<=9) zoneCounts[0]++; else if(n<=19) zoneCounts[1]++; else if(n<=29) zoneCounts[2]++; else if(n<=39) zoneCounts[3]++; else zoneCounts[4]++; }); }); const coldZoneIdx = zoneCounts.indexOf(Math.min(...zoneCounts)); for(let k=0; k<500; k++) { const set = []; const pool = Array.from({length: maxN}, (_, i) => i + 1); if (Math.random() > 0.5) { const start = coldZoneIdx * 10; const end = start + 9; for(let i=pool.length-1; i>=0; i--) { if(pool[i] >= start && pool[i] <= end) pool.splice(i, 1); } } for(let i=0; i<count; i++) { if(pool.length === 0) break; const idx = Math.floor(Math.random() * pool.length); set.push(pool[idx]); pool.splice(idx, 1); } set.sort((a,b)=>a-b); if (set.length < count) continue; let odd = set.filter(n => n%2!==0).length; let even = count - odd; let diffOE = Math.abs(odd - even); let sum = set.reduce((a,b)=>a+b, 0); let expectedSum = (1 + maxN) * count / 2; let diffSum = Math.abs(sum - expectedSum) / expectedSum; let score = (diffOE * 15) + (diffSum * 50); if(score < minScore) { minScore = score; bestSet = set; bestInfo = { odd, even, sum }; } } const setZones = [0,0,0,0,0]; bestSet.forEach(n => { if(n<=9) setZones[0]++; else if(n<=19) setZones[1]++; else if(n<=29) setZones[2]++; else if(n<=39) setZones[3]++; else setZones[4]++; }); const emptyZone = setZones.findIndex(z => z === 0); const zoneMsg = emptyZone > -1 ? `🚫 斷第${emptyZone+1}區` : ""; return { numbers: bestSet.map(n => ({ val: n, tag: n%2===0 ? '偶' : '奇' })), groupReason: `結構：${bestInfo.odd}奇${bestInfo.even}偶 | 總和 ${bestInfo.sum} | ${zoneMsg}` }; },
