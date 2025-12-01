@@ -167,9 +167,12 @@
                         <div class="flex flex-col md:flex-row gap-4 items-center">
                             <div class="w-full">
                                 <label class="text-xs font-bold text-pink-700 ml-1 mb-1 block">選擇運勢主角</label>
-                                <select id="profile-select" onchange="app.onProfileChange()" class="custom-select w-full bg-white border border-pink-200 rounded-xl px-4 py-3 text-sm font-bold text-stone-700 focus:outline-none focus:border-pink-400 cursor-pointer">
-                                    <option value="">請先在個人檔案新增...</option>
-                                </select>
+                                <div class="flex gap-2">
+                                    <select id="profile-select" onchange="app.onProfileChange()" class="custom-select w-full bg-white border border-pink-200 rounded-xl px-4 py-3 text-sm font-bold text-stone-700 focus:outline-none focus:border-pink-400 cursor-pointer">
+                                        <option value="">請先在個人檔案新增...</option>
+                                    </select>
+                                    <button onclick="app.deleteCurrentProfile()" class="bg-red-100 text-red-500 px-4 rounded-xl hover:bg-red-200 transition border border-red-200" title="刪除此檔案">🗑️</button>
+                                </div>
                             </div>
                         </div>
                         <div id="ai-fortune-section" class="hidden border-t border-pink-200 pt-4 mt-2">
@@ -178,9 +181,12 @@
                                     <h4 class="text-pink-800 font-bold text-sm">🔮 AI 流年命盤</h4>
                                     <p class="text-xs text-pink-600 mt-1" id="ai-fortune-status">尚未計算流年</p>
                                 </div>
-                                <button onclick="app.generateAIFortune()" id="btn-calc-ai" class="bg-pink-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-pink-700 transition flex items-center gap-2">
-                                    <span class="text-lg">✨</span> 啟動大師批流年
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="app.clearFortune()" id="btn-clear-ai" class="hidden text-xs text-stone-400 underline hover:text-pink-600 mr-2">清除資料</button>
+                                    <button onclick="app.generateAIFortune()" id="btn-calc-ai" class="bg-pink-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-pink-700 transition flex items-center gap-2">
+                                        <span class="text-lg">✨</span> 啟動大師批流年
+                                    </button>
+                                </div>
                             </div>
                             <div id="ai-loading" class="hidden mt-3 text-xs text-pink-600 font-bold flex items-center gap-2">
                                 <div class="spinner"></div> AI 宗師正在分析命盤，請稍候...
@@ -323,20 +329,22 @@
                 document.getElementById('search-year').addEventListener('change', (e) => { this.state.filterYear = e.target.value; this.updateDashboard(); });
                 document.getElementById('search-month').addEventListener('change', (e) => { this.state.filterMonth = e.target.value; this.updateDashboard(); });
             },
+            
+            // === Firebase Logic ===
             async initFirebase() {
                 if (typeof window.firebaseModules === 'undefined') { this.loadProfilesLocal(); return; }
                 const { initializeApp, getAuth, onAuthStateChanged, getFirestore, getDoc, doc } = window.firebaseModules;
                 
                 // ============================================================
-                // 🔥 FIREBASE CONFIG 已植入 🔥
+                // 🔥 FIREBASE CONFIG 🔥
                 // ============================================================
                 const firebaseConfig = {
-                    apiKey: "AIzaSyBatltfrvZ5AXixdZBcruClqYrA-9ihsI0",
-                    authDomain: "lottery-app-bd106.firebaseapp.com",
-                    projectId: "lottery-app-bd106",
-                    storageBucket: "lottery-app-bd106.firebasestorage.app",
-                    messagingSenderId: "13138331714",
-                    appId: "1:13138331714:web:194ac3ff9513d19d9845db"
+                  apiKey: "AIzaSyBatltfrvZ5AXixdZBcruClqYrA-9ihsI0",
+                  authDomain: "lottery-app-bd106.firebaseapp.com",
+                  projectId: "lottery-app-bd106",
+                  storageBucket: "lottery-app-bd106.firebasestorage.app",
+                  messagingSenderId: "13138331714",
+                  appId: "1:13138331714:web:194ac3ff9513d19d9845db"
                 };
                 // ============================================================
 
@@ -418,7 +426,6 @@
                 const profile = this.state.profiles.find(p => p.id == pid);
                 if (!profile) return;
                 
-                // 檢查資料完整度以決定角色
                 const hasZiwei = !!profile.ziwei;
                 const hasAstro = !!profile.astro;
                 const hasName = !!profile.realname;
@@ -484,16 +491,43 @@
                 const pid = document.getElementById('profile-select').value;
                 const status = document.getElementById('ai-fortune-status');
                 const btn = document.getElementById('btn-calc-ai');
-                if (!pid) { status.innerText = "尚未選擇"; return; }
+                const btnClear = document.getElementById('btn-clear-ai');
+                
+                if (!pid) { status.innerText = "尚未選擇"; btnClear.classList.add('hidden'); return; }
                 const profile = this.state.profiles.find(p => p.id == pid);
                 if (profile && profile.fortune2025) {
                     status.innerText = `✅ 已有 2025 流年數據 (${profile.fortune2025.year_analysis})`;
                     status.className = "text-xs text-green-600 mt-1 font-bold";
                     btn.innerText = "🔄 重新批算";
+                    btnClear.classList.remove('hidden');
                 } else {
                     status.innerText = "尚未計算流年";
                     status.className = "text-xs text-pink-600 mt-1";
                     btn.innerText = "✨ 啟動大師批流年";
+                    btnClear.classList.add('hidden');
+                }
+            },
+
+            deleteCurrentProfile() {
+                const pid = document.getElementById('profile-select').value;
+                if(!pid) return;
+                if(confirm('確定要刪除目前選中的檔案嗎？(此動作無法復原)')) {
+                    this.deleteProfile(Number(pid));
+                    document.getElementById('profile-select').value = "";
+                    this.onProfileChange();
+                }
+            },
+            
+            clearFortune() {
+                const pid = document.getElementById('profile-select').value;
+                if(!pid) return;
+                const profile = this.state.profiles.find(p => p.id == pid);
+                if(profile && profile.fortune2025) {
+                    if(confirm('確定要清除已計算的流年資料嗎？(將可以重新計算)')) {
+                        delete profile.fortune2025;
+                        this.saveProfiles();
+                        this.onProfileChange();
+                    }
                 }
             },
 
@@ -556,7 +590,6 @@
                 const selected = this.weightedRandomSelect(weights, maxN, count);
                 return { numbers: selected.map(n => ({ val: n, tag: weights[n] > 30 ? "吉" : "" })), groupReason: `運勢盤：${reasons.join(' + ')}` };
             },
-            // 演算法群 (略，保持 V22.5 的內容不變)
             algoStat(data, maxN, count) { const freq = {}; data.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1)); const lastSeen = {}; for(let i=1; i<=maxN; i++) lastSeen[i] = -1; data.forEach((d, idx) => { d.numbers.forEach(n => { if (lastSeen[n] === -1) lastSeen[n] = idx; }); }); const weights = {}; const tags = {}; for(let i=1; i<=maxN; i++) { let w = freq[i] || 0; const miss = lastSeen[i] === -1 ? data.length : lastSeen[i]; w += (miss * 0.5); if (miss > 15) tags[i] = `冷${miss}期`; else if (freq[i] > data.length * 0.15) tags[i] = "熱號"; else tags[i] = "常態"; if (w > 500) w = 500; weights[i] = w; } const selected = this.weightedRandomSelect(weights, maxN, count); return { numbers: selected.map(n => ({ val: n, tag: tags[n] })), groupReason: "根據歷史頻率與遺漏值動態回補" }; },
             algoPattern(data, maxN, count) { if(data.length < 2) return this.algoStat(data, maxN, count); const lastDraw = data[0].numbers; const nextDrawCounts = {}; const relationMap = {}; const tailCounts = {}; data.slice(0, 10).forEach(d => { d.numbers.forEach(n => { const tail = n % 10; tailCounts[tail] = (tailCounts[tail] || 0) + 1; }); }); const hotTail = Object.entries(tailCounts).sort((a,b)=>b[1]-a[1])[0][0]; for(let i=1; i<data.length; i++) { const intersection = data[i].numbers.filter(n => lastDraw.includes(n)); if(intersection.length > 0) { data[i-1].numbers.forEach(n => { nextDrawCounts[n] = (nextDrawCounts[n]||0) + intersection.length; if (!relationMap[n]) relationMap[n] = intersection[0]; }); } } if(Object.keys(nextDrawCounts).length === 0) return this.algoStat(data, maxN, count); for(let k in nextDrawCounts) { if (k % 10 == hotTail) nextDrawCounts[k] *= 1.5; nextDrawCounts[k] *= (0.9 + Math.random() * 0.2); } const selected = this.weightedRandomSelect(nextDrawCounts, maxN, count); return { numbers: selected.map(n => ({ val: n, tag: relationMap[n] ? `由${relationMap[n]}拖牌` : (n%10==hotTail ? `${hotTail}尾強勢` : '關聯') })), groupReason: `上期[${lastDraw.slice(0,3).join(',')}]拖牌 + ${hotTail}尾數趨勢融合` }; },
             algoBalance(data, maxN, count) { let bestSet = []; let minScore = 99999; let bestInfo = {}; const zoneCounts = [0,0,0,0,0]; data.slice(0, 30).forEach(d => { d.numbers.forEach(n => { if(n<=9) zoneCounts[0]++; else if(n<=19) zoneCounts[1]++; else if(n<=29) zoneCounts[2]++; else if(n<=39) zoneCounts[3]++; else zoneCounts[4]++; }); }); const coldZoneIdx = zoneCounts.indexOf(Math.min(...zoneCounts)); for(let k=0; k<500; k++) { const set = []; const pool = Array.from({length: maxN}, (_, i) => i + 1); if (Math.random() > 0.5) { const start = coldZoneIdx * 10; const end = start + 9; for(let i=pool.length-1; i>=0; i--) { if(pool[i] >= start && pool[i] <= end) pool.splice(i, 1); } } for(let i=0; i<count; i++) { if(pool.length === 0) break; const idx = Math.floor(Math.random() * pool.length); set.push(pool[idx]); pool.splice(idx, 1); } set.sort((a,b)=>a-b); if (set.length < count) continue; let odd = set.filter(n => n%2!==0).length; let even = count - odd; let diffOE = Math.abs(odd - even); let sum = set.reduce((a,b)=>a+b, 0); let expectedSum = (1 + maxN) * count / 2; let diffSum = Math.abs(sum - expectedSum) / expectedSum; let score = (diffOE * 15) + (diffSum * 50); if(score < minScore) { minScore = score; bestSet = set; bestInfo = { odd, even, sum }; } } const setZones = [0,0,0,0,0]; bestSet.forEach(n => { if(n<=9) setZones[0]++; else if(n<=19) setZones[1]++; else if(n<=29) setZones[2]++; else if(n<=39) setZones[3]++; else setZones[4]++; }); const emptyZone = setZones.findIndex(z => z === 0); const zoneMsg = emptyZone > -1 ? `🚫 斷第${emptyZone+1}區` : ""; return { numbers: bestSet.map(n => ({ val: n, tag: n%2===0 ? '偶' : '奇' })), groupReason: `結構：${bestInfo.odd}奇${bestInfo.even}偶 | 總和 ${bestInfo.sum} | ${zoneMsg}` }; },
