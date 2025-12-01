@@ -6,7 +6,7 @@
     <title>台彩全能分析儀</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
@@ -16,11 +16,21 @@
                 extend: {
                     fontFamily: { sans: ['"Zen Maru Gothic"', 'sans-serif'] },
                     colors: {
+                        // 文青風配色盤
+                        stone: {
+                            50: '#fafaf9',
+                            100: '#f5f5f4',
+                            200: '#e7e5e4',
+                            600: '#57534e',
+                            800: '#292524',
+                            900: '#1c1917',
+                        },
+                        // 莫蘭迪色系作為學派代表色
                         school: {
-                            stat: '#3B82F6',    // Blue
-                            pattern: '#8B5CF6', // Purple
-                            balance: '#10B981', // Green
-                            ai: '#F59E0B'       // Amber
+                            stat: '#64748b',    // Slate Blue
+                            pattern: '#7c3aed', // Soft Purple
+                            balance: '#059669', // Emerald
+                            ai: '#d97706'       // Amber
                         }
                     }
                 }
@@ -29,269 +39,337 @@
     </script>
 
     <style>
-        body { background-color: #f8fafc; color: #475569; }
-        .school-card { transition: all 0.2s; cursor: pointer; border: 2px solid transparent; }
-        .school-card:hover { transform: translateY(-2px); }
-        .school-card.active { border-color: currentColor; background-color: white; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        /* 整體背景改為溫暖的米色調 */
+        body { background-color: #f7f6f2; color: #44403c; letter-spacing: 0.05em; }
         
-        .school-stat { color: #3B82F6; }
-        .school-pattern { color: #8B5CF6; }
-        .school-balance { color: #10B981; }
-        .school-ai { color: #F59E0B; }
+        /* 卡片效果優化：更柔和的陰影 */
+        .school-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 2px solid transparent; background-color: #fff; border-radius: 1rem; }
+        .school-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .school-card.active { border-color: #78716c; background-color: #fffaf0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+        
+        /* 學派文字顏色微調 */
+        .school-stat { color: #475569; }
+        .school-pattern { color: #7c3aed; }
+        .school-balance { color: #059669; }
+        .school-ai { color: #d97706; }
 
-        .ball { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: 1px 1px 3px rgba(0,0,0,0.15); font-size: 15px; position: relative; z-index: 1; }
-        .ball-hot { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #b91c1c; border: 2px solid #f87171; }
+        /* 號碼球文青化：去邊框，柔和漸層 */
+        .ball { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; position: relative; z-index: 1; box-shadow: 2px 3px 6px rgba(0,0,0,0.1); }
+        .ball-hot { background: #e11d48; color: #fffaf0; } /* 玫瑰紅 */
         
-        /* 加大列表中的球號 */
-        .ball-sm { width: 34px; height: 34px; font-size: 15px; border: 1px solid #e2e8f0; background: white; color: #334155; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .ball-special { border-color: #f87171; color: #dc2626; background: #fef2f2; }
+        /* 列表中的小球 */
+        .ball-sm { width: 36px; height: 36px; font-size: 16px; border-radius: 50%; background: #fff; color: #57534e; border: 1px solid #d6d3d1; box-shadow: 1px 2px 4px rgba(0,0,0,0.05); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 6px; }
+        .ball-special { border-color: #f43f5e; color: #f43f5e; background: #fff1f2; }
 
-        .stat-box { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .count-badge { font-size: 0.7rem; background-color: #f1f5f9; padding: 2px 6px; border-radius: 99px; margin-top: -8px; padding-top: 10px; z-index: 0; color: #64748b; font-weight: bold; border: 1px solid #e2e8f0; }
+        .stat-box { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); border: 1px solid #f0ebe4; }
+        .count-badge { font-size: 0.75rem; background-color: #f5f5f4; padding: 4px 10px; border-radius: 99px; margin-top: -10px; padding-top: 12px; z-index: 0; color: #78716c; font-weight: bold; }
         
-        .game-tab { white-space: nowrap; padding: 10px 20px; border-radius: 99px; font-weight: 900; transition: all 0.3s; color: #64748b; background: #e2e8f0; cursor: pointer; font-size: 1.1rem; }
-        .game-tab.active { background: #1e293b; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        /* 遊戲標籤：更像紙張標籤 */
+        .game-tab { 
+            white-space: nowrap; padding: 12px 24px; border-radius: 12px; font-weight: 700; transition: all 0.3s; 
+            color: #78716c; background: #e7e5e4; cursor: pointer; font-size: 1rem; 
+            border: 2px solid transparent;
+        }
+        .game-tab:hover { background: #d6d3d1; }
+        .game-tab.active { 
+            background: #44403c; color: #f5f5f4; 
+            box-shadow: 0 4px 10px rgba(60, 60, 60, 0.2); 
+            transform: scale(1.02);
+        }
         
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* 自定義下拉選單樣式 */
+        /* 輸入框美化 */
+        .custom-input {
+            background-color: #f5f5f4; border: 2px solid #e7e5e4; color: #44403c; transition: all 0.2s;
+        }
+        .custom-input:focus {
+            background-color: #fff; border-color: #a8a29e; outline: none; box-shadow: 0 0 0 3px rgba(168, 162, 158, 0.2);
+        }
+        
+        /* 下拉選單 */
         .custom-select {
             appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2378716c' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
             background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
+            background-size: 1.2em 1.2em;
         }
+        
+        /* 表格優化 */
+        .table-row { transition: background-color 0.2s; }
+        .table-row:hover { background-color: #fafaf9; }
     </style>
 </head>
-<body class="text-slate-700 p-4 md:p-6 min-h-screen">
+<body class="p-4 md:p-8 min-h-screen flex flex-col font-medium">
 
-    <div class="max-w-5xl mx-auto">
+    <div class="max-w-6xl mx-auto w-full">
         
-        <header class="text-center mb-6">
-            <h1 class="text-3xl md:text-4xl font-black mb-2 text-slate-800 tracking-tight">台彩全能分析儀</h1>
-            <p class="text-slate-500 text-sm">AI 自動同步 • 智能搜尋 • 四大戰術流派</p>
+        <!-- 標題區：極簡文青 -->
+        <header class="text-center mb-10 mt-4">
+            <div class="inline-block relative">
+                <h1 class="text-3xl md:text-5xl font-black text-stone-800 tracking-wider mb-2 relative z-10">台彩全能分析儀</h1>
+                <div class="h-3 w-full bg-yellow-200/50 absolute bottom-1 z-0 rounded-full transform -rotate-1"></div>
+            </div>
+            <p class="text-stone-500 text-sm mt-3 font-bold tracking-widest uppercase">AI 自動同步 • 智能搜尋 • 四大戰術流派</p>
         </header>
 
-        <!-- 狀態列 -->
-        <div class="bg-white rounded-xl p-4 shadow-sm mb-6 border border-slate-200 flex items-center justify-between">
+        <!-- 狀態列：柔和卡片 -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm mb-8 border border-stone-100 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <span class="relative flex h-3 w-3">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" id="status-ping"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" id="status-dot"></span>
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-stone-400 opacity-75" id="status-ping"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-stone-500" id="status-dot"></span>
                 </span>
-                <span class="text-sm font-bold text-slate-600" id="status-text">系統待命中...</span>
+                <span class="text-sm font-bold text-stone-600 tracking-wide" id="status-text">系統待命中...</span>
             </div>
-            <div class="text-xs text-slate-400 font-bold" id="last-update-time"></div>
+            <div class="text-xs text-stone-400 font-bold bg-stone-50 px-3 py-1 rounded-full" id="last-update-time">等待更新</div>
         </div>
 
         <!-- 橫向遊戲選擇器 -->
-        <div class="mb-8 overflow-x-auto hide-scrollbar pb-2">
-            <div class="flex gap-3" id="game-tabs-container">
+        <div class="mb-10 overflow-x-auto hide-scrollbar pb-2">
+            <div class="flex gap-4 justify-center min-w-max px-2" id="game-tabs-container">
                 <div class="game-tab active">載入中...</div>
             </div>
         </div>
 
-        <div id="dashboard-area" class="hidden animate-[fadeIn_0.5s_ease-out]">
-            <!-- 儀表板頭部 -->
-            <div class="bg-slate-800 text-white rounded-t-2xl p-4">
-                <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-                    <div class="flex flex-col gap-1 w-full md:w-auto">
-                        <div class="flex items-center gap-2">
-                            <span class="text-2xl">🎯</span>
-                            <span class="text-lg font-bold" id="current-game-title">大樂透</span>
-                            <span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300" id="latest-period">--期</span>
+        <div id="dashboard-area" class="hidden animate-[fadeIn_0.6s_ease-out]">
+            
+            <!-- 控制儀表板：從深色改成清爽的白色卡片 -->
+            <div class="bg-white rounded-3xl p-6 shadow-md border border-stone-100 mb-8 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-2 h-full bg-stone-800"></div>
+                
+                <!-- 標題與資訊 -->
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8 pl-4">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">🎯</span>
+                            <span class="text-2xl font-black text-stone-800 tracking-tight" id="current-game-title">大樂透</span>
+                            <span class="text-xs bg-stone-200 text-stone-600 px-3 py-1 rounded-full font-bold" id="latest-period">--期</span>
                         </div>
-                        <div id="jackpot-container" class="hidden mt-1">
-                            <span class="text-xs text-yellow-400 font-bold mr-1">目前頭獎</span>
-                            <span class="text-xl font-black text-yellow-300 tracking-wider" id="jackpot-amount">$ --</span>
+                        <div id="jackpot-container" class="hidden mt-2 flex items-baseline gap-2">
+                            <span class="text-xs text-stone-400 font-bold uppercase tracking-widest">Jackpot</span>
+                            <span class="text-2xl font-black text-yellow-600 font-sans tracking-tight" id="jackpot-amount">$ --</span>
                         </div>
                     </div>
-                    <div class="text-xs text-slate-400 text-right">
-                        資料庫總筆數：<span id="total-count" class="text-white font-bold text-base">0</span> 期
-                        <span class="mx-2 hidden md:inline">|</span>
-                        <br class="md:hidden">
-                        區間：<span id="date-range" class="text-white">...</span>
+                    <div class="text-sm text-stone-400 text-right font-medium bg-stone-50 px-4 py-2 rounded-xl">
+                        <div class="mb-1">資料庫總筆數：<span id="total-count" class="text-stone-700 font-bold text-lg">0</span> 期</div>
+                        <div class="text-xs">區間：<span id="date-range">...</span></div>
                     </div>
                 </div>
 
-                <!-- 搜尋與過濾區 (修改為下拉式) -->
-                <div class="bg-slate-700/50 rounded-xl p-3 flex flex-col md:flex-row gap-3 items-center">
-                    <div class="w-full md:w-auto flex-1 flex items-center gap-2">
-                        <span class="text-xl">🔍</span>
-                        <input type="text" id="search-period" placeholder="輸入期數 (如: 114000088)" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-400 placeholder-slate-500 tracking-wide">
-                    </div>
-                    <div class="w-full md:w-auto flex items-center gap-2">
-                        <span class="text-xl">📅</span>
-                        <div class="flex gap-2 w-full">
-                            <select id="search-year" class="custom-select w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-400 cursor-pointer">
-                                <option value="">年份</option>
-                                <!-- JS 動態生成 -->
-                            </select>
-                            <select id="search-month" class="custom-select w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-400 cursor-pointer">
-                                <option value="">月份</option>
-                                <option value="1">1月</option>
-                                <option value="2">2月</option>
-                                <option value="3">3月</option>
-                                <option value="4">4月</option>
-                                <option value="5">5月</option>
-                                <option value="6">6月</option>
-                                <option value="7">7月</option>
-                                <option value="8">8月</option>
-                                <option value="9">9月</option>
-                                <option value="10">10月</option>
-                                <option value="11">11月</option>
-                                <option value="12">12月</option>
-                            </select>
+                <!-- 搜尋與過濾區 (依照您的要求修改：文青風 + 尺寸調整) -->
+                <div class="bg-stone-50 rounded-2xl p-5 border border-stone-200">
+                    <div class="flex flex-col lg:flex-row gap-4 items-end lg:items-center">
+                        
+                        <!-- 期數輸入：縮小寬度 -->
+                        <div class="flex flex-col gap-1.5 w-full sm:w-auto">
+                            <label class="text-xs font-bold text-stone-400 ml-1">期數查詢</label>
+                            <div class="relative w-full sm:w-48"> <!-- 限制寬度 -->
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">#</span>
+                                <input type="text" id="search-period" placeholder="輸入期號" class="custom-input w-full rounded-xl pl-8 pr-4 py-3 text-base font-bold placeholder-stone-400">
+                            </div>
                         </div>
+
+                        <!-- 日期選擇：加大寬度 -->
+                        <div class="flex flex-col gap-1.5 w-full sm:w-auto flex-1">
+                            <label class="text-xs font-bold text-stone-400 ml-1">日期篩選</label>
+                            <div class="flex gap-3">
+                                <div class="relative w-full sm:w-1/2">
+                                    <select id="search-year" class="custom-input custom-select w-full rounded-xl px-4 py-3 text-base font-bold cursor-pointer appearance-none">
+                                        <option value="">選擇年份</option>
+                                        <!-- JS 動態生成 -->
+                                    </select>
+                                </div>
+                                <div class="relative w-full sm:w-1/2">
+                                    <select id="search-month" class="custom-input custom-select w-full rounded-xl px-4 py-3 text-base font-bold cursor-pointer appearance-none">
+                                        <option value="">選擇月份</option>
+                                        <option value="1">1 月</option>
+                                        <option value="2">2 月</option>
+                                        <option value="3">3 月</option>
+                                        <option value="4">4 月</option>
+                                        <option value="5">5 月</option>
+                                        <option value="6">6 月</option>
+                                        <option value="7">7 月</option>
+                                        <option value="8">8 月</option>
+                                        <option value="9">9 月</option>
+                                        <option value="10">10 月</option>
+                                        <option value="11">11 月</option>
+                                        <option value="12">12 月</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="app.resetFilter()" class="text-sm font-bold text-stone-400 hover:text-stone-600 underline whitespace-nowrap px-4 py-3 h-full flex items-center">
+                            清除重置
+                        </button>
                     </div>
-                    <button onclick="app.resetFilter()" class="text-xs text-slate-400 hover:text-white underline whitespace-nowrap px-2">重置</button>
                 </div>
             </div>
 
-            <!-- 統計方塊 -->
-            <div class="bg-slate-100 border-x border-slate-200 p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- 統計方塊：改為清爽版 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="stat-box">
-                    <h4 class="font-bold text-slate-500 text-xs uppercase mb-3 flex justify-between">
-                        🔥 本年度熱門 (Top 5) <span class="text-slate-300" id="year-label">Year</span>
+                    <h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">
+                        🔥 年度熱門 <span class="text-stone-300" id="year-label">Year</span>
                     </h4>
                     <div id="stat-year" class="flex flex-wrap gap-3 justify-center"></div>
                 </div>
                 <div class="stat-box">
-                    <h4 class="font-bold text-slate-500 text-xs uppercase mb-3 flex justify-between">
-                        📅 本月熱門 (Top 5) <span class="text-slate-300" id="month-label">Month</span>
+                    <h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">
+                        📅 本月熱門 <span class="text-stone-300" id="month-label">Month</span>
                     </h4>
                     <div id="stat-month" class="flex flex-wrap gap-3 justify-center"></div>
                 </div>
                 <div class="stat-box">
-                    <h4 class="font-bold text-slate-500 text-xs uppercase mb-3 flex justify-between">
-                        ⚡ 近 10 期熱門 (Top 5) <span class="text-slate-300">Trend</span>
+                    <h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">
+                        ⚡ 近期熱勢 <span class="text-stone-300">Trend</span>
                     </h4>
                     <div id="stat-recent" class="flex flex-wrap gap-3 justify-center"></div>
                 </div>
             </div>
 
-            <!-- 開獎列表 (字體加大) -->
-            <div class="bg-white border-x border-b border-slate-200 p-4 rounded-b-2xl mb-8">
-                <h4 class="font-bold text-slate-700 text-base mb-3 border-l-4 border-blue-500 pl-3 flex justify-between items-center">
-                    <span>📅 開獎結果列表</span>
-                    <span class="text-xs text-slate-400 font-normal" id="list-info">顯示近 5 期</span>
-                </h4>
-                <div class="overflow-x-auto max-h-80 overflow-y-auto custom-scrollbar">
-                    <table class="w-full text-left text-slate-600">
-                        <thead class="text-sm text-slate-500 uppercase bg-slate-50 sticky top-0 z-10">
+            <!-- 開獎列表 (字體加大、文青風表格) -->
+            <div class="bg-white rounded-3xl shadow-md border border-stone-100 overflow-hidden mb-12">
+                <div class="bg-stone-50 px-6 py-4 border-b border-stone-200 flex justify-between items-center">
+                    <h4 class="font-black text-stone-700 text-lg flex items-center gap-2">
+                        <span class="text-xl">📅</span> 歷史開獎記錄
+                    </h4>
+                    <span class="text-xs font-bold text-stone-400 bg-white px-3 py-1 rounded-lg border border-stone-200 shadow-sm" id="list-info">顯示近 5 期</span>
+                </div>
+                <div class="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar p-2">
+                    <table class="w-full text-left">
+                        <thead class="text-sm font-bold text-stone-400 uppercase">
                             <tr>
-                                <th class="px-4 py-3 rounded-l-lg font-bold">期別 / 日期</th>
-                                <th class="px-4 py-3 rounded-r-lg font-bold">開出號碼</th>
+                                <th class="px-6 py-4 rounded-xl bg-white sticky top-0 z-10 w-48">期別資訊</th>
+                                <th class="px-6 py-4 rounded-xl bg-white sticky top-0 z-10">開出號碼</th>
                             </tr>
                         </thead>
-                        <tbody id="history-list" class="divide-y divide-slate-100 text-base">
+                        <tbody id="history-list" class="divide-y divide-stone-100">
                             <!-- JS 填充 -->
                         </tbody>
                     </table>
                 </div>
-                <div id="no-result-msg" class="hidden text-center py-6 text-slate-400 text-sm">查無符合資料</div>
+                <div id="no-result-msg" class="hidden text-center py-12 text-stone-400 font-bold">
+                    <div class="text-4xl mb-2">🍃</div>
+                    沒有找到符合的資料
+                </div>
             </div>
         </div>
 
-        <div id="strategy-area" class="hidden">
-            <h3 class="font-bold text-xl mb-4 text-center text-slate-800">🧠 選擇您的戰術流派</h3>
+        <div id="strategy-area" class="hidden animate-[fadeIn_0.8s_ease-out]">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="h-px bg-stone-300 flex-1"></div>
+                <h3 class="font-black text-2xl text-stone-800 tracking-tight">🧠 戰術流派選擇</h3>
+                <div class="h-px bg-stone-300 flex-1"></div>
+            </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="school-card school-stat bg-white p-4 rounded-xl shadow-sm relative active" onclick="app.selectSchool('stat')">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="text-2xl">📊</div>
-                        <h4 class="font-bold">統計學派</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="school-card school-stat p-5 relative active" onclick="app.selectSchool('stat')">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="text-3xl">📊</div>
+                        <h4 class="font-bold text-lg">統計學派</h4>
                     </div>
-                    <p class="text-xs opacity-70 leading-tight">冷熱號 / 回歸平均</p>
-                    <div class="absolute top-4 right-4 w-3 h-3 rounded-full border-2 border-current bg-current" id="dot-stat"></div>
+                    <p class="text-sm opacity-80 font-medium">冷熱號 / 回歸平均</p>
+                    <div class="absolute top-5 right-5 w-3 h-3 rounded-full bg-current opacity-100" id="dot-stat"></div>
                 </div>
 
-                <div class="school-card school-pattern bg-white p-4 rounded-xl shadow-sm relative" onclick="app.selectSchool('pattern')">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="text-2xl">🔗</div>
-                        <h4 class="font-bold">關聯性學派</h4>
+                <div class="school-card school-pattern p-5 relative" onclick="app.selectSchool('pattern')">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="text-3xl">🔗</div>
+                        <h4 class="font-bold text-lg">關聯學派</h4>
                     </div>
-                    <p class="text-xs opacity-70 leading-tight">拖牌 / 版路 / 尾數</p>
-                    <div class="absolute top-4 right-4 w-3 h-3 rounded-full border-2 border-current opacity-0" id="dot-pattern"></div>
+                    <p class="text-sm opacity-80 font-medium">拖牌 / 版路 / 尾數</p>
+                    <div class="absolute top-5 right-5 w-3 h-3 rounded-full bg-current opacity-0" id="dot-pattern"></div>
                 </div>
 
-                <div class="school-card school-balance bg-white p-4 rounded-xl shadow-sm relative" onclick="app.selectSchool('balance')">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="text-2xl">⚖️</div>
-                        <h4 class="font-bold">結構平衡學派</h4>
+                <div class="school-card school-balance p-5 relative" onclick="app.selectSchool('balance')">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="text-3xl">⚖️</div>
+                        <h4 class="font-bold text-lg">平衡學派</h4>
                     </div>
-                    <p class="text-xs opacity-70 leading-tight">聰明包牌 / 奇偶比</p>
-                    <div class="absolute top-4 right-4 w-3 h-3 rounded-full border-2 border-current opacity-0" id="dot-balance"></div>
+                    <p class="text-sm opacity-80 font-medium">聰明包牌 / 奇偶比</p>
+                    <div class="absolute top-5 right-5 w-3 h-3 rounded-full bg-current opacity-0" id="dot-balance"></div>
                 </div>
 
-                <div class="school-card school-ai bg-white p-4 rounded-xl shadow-sm relative" onclick="app.selectSchool('ai')">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="text-2xl">🤖</div>
-                        <h4 class="font-bold">AI 機器學習</h4>
+                <div class="school-card school-ai p-5 relative" onclick="app.selectSchool('ai')">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="text-3xl">🤖</div>
+                        <h4 class="font-bold text-lg">AI 運算</h4>
                     </div>
-                    <p class="text-xs opacity-70 leading-tight">時間序列 / 趨勢</p>
-                    <div class="absolute top-4 right-4 w-3 h-3 rounded-full border-2 border-current opacity-0" id="dot-ai"></div>
+                    <p class="text-sm opacity-80 font-medium">時間序列 / 趨勢</p>
+                    <div class="absolute top-5 right-5 w-3 h-3 rounded-full bg-current opacity-0" id="dot-ai"></div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-                <!-- 學派說明區塊 -->
-                <div id="school-description" class="mb-6 text-sm leading-relaxed text-slate-600 bg-slate-50 p-5 rounded-xl border-l-4 border-blue-500"></div>
+            <div class="bg-white rounded-3xl p-8 shadow-lg border border-stone-100 relative overflow-hidden">
+                <!-- 裝飾背景 -->
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-stone-50 rounded-full z-0"></div>
+                
+                <!-- 學派說明區塊 (依照您的要求更新文案) -->
+                <div id="school-description" class="relative z-10 mb-8 text-base leading-relaxed text-stone-600 bg-stone-50 p-8 rounded-2xl border-l-4 border-stone-400"></div>
 
-                <div class="flex flex-col items-center gap-6">
-                    <div class="flex items-center bg-slate-100 p-1.5 rounded-lg">
-                        <span class="text-xs font-bold text-slate-500 px-3">生成組數：</span>
-                        <div class="flex gap-1">
+                <div class="relative z-10 flex flex-col items-center gap-8 border-t border-stone-100 pt-8">
+                    <div class="flex items-center bg-stone-100 p-2 rounded-2xl">
+                        <span class="text-sm font-bold text-stone-500 px-4">生成組數</span>
+                        <div class="flex gap-2">
                             <label class="cursor-pointer">
                                 <input type="radio" name="count" value="1" class="peer hidden" checked>
-                                <span class="block px-4 py-1.5 rounded bg-white text-slate-400 peer-checked:bg-slate-800 peer-checked:text-white text-sm font-bold transition shadow-sm">1 組</span>
+                                <span class="block px-6 py-2 rounded-xl bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-sm font-bold transition shadow-sm hover:text-stone-600">1 組</span>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" name="count" value="3" class="peer hidden">
-                                <span class="block px-4 py-1.5 rounded bg-white text-slate-400 peer-checked:bg-slate-800 peer-checked:text-white text-sm font-bold transition shadow-sm">3 組</span>
+                                <span class="block px-6 py-2 rounded-xl bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-sm font-bold transition shadow-sm hover:text-stone-600">3 組</span>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" name="count" value="5" class="peer hidden">
-                                <span class="block px-4 py-1.5 rounded bg-white text-slate-400 peer-checked:bg-slate-800 peer-checked:text-white text-sm font-bold transition shadow-sm">5 組</span>
+                                <span class="block px-6 py-2 rounded-xl bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-sm font-bold transition shadow-sm hover:text-stone-600">5 組</span>
                             </label>
                         </div>
                     </div>
 
-                    <button onclick="app.runPrediction()" class="w-full md:w-auto bg-gradient-to-r from-slate-800 to-slate-900 text-white px-12 py-4 rounded-xl font-black text-lg shadow-xl shadow-slate-300 hover:scale-105 hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <span>🚀</span> 執行運算與生成
+                    <button onclick="app.runPrediction()" class="w-full md:w-auto bg-stone-800 hover:bg-stone-700 text-stone-50 px-16 py-5 rounded-2xl font-black text-xl shadow-xl shadow-stone-200 active:scale-95 transition-all flex items-center justify-center gap-3">
+                        <span>🚀</span> 執行智能分析
                     </button>
                 </div>
 
-                <div id="result-area" class="mt-8 hidden border-t border-slate-100 pt-8">
-                    <h4 class="text-center font-bold text-slate-400 mb-6 text-sm">推薦號碼組合</h4>
+                <div id="result-area" class="mt-10 hidden border-t border-stone-100 pt-10">
+                    <h4 class="text-center font-bold text-stone-400 mb-8 text-sm tracking-widest uppercase">Recommended Combination</h4>
                     <div id="prediction-output" class="space-y-4"></div>
                 </div>
             </div>
         </div>
 
+        <div class="text-center mt-12 text-xs text-stone-300 font-bold pb-4">
+            DESIGNED FOR LOTTERY ANALYSIS
+        </div>
+
     </div>
+
+    <!-- 隱藏的手動上傳功能 (備用) -->
+    <input type="file" id="fileInput" accept=".zip" class="hidden" />
 
     <script>
         const CONFIG = {
             JSON_URL: 'data/lottery-data.json',
-            // 移除 '雙贏彩'
             GAMES_ORDER: ['大樂透', '威力彩', '今彩539', '3星彩', '4星彩']
         };
 
+        // 文案完全依照您的要求設定
         const schoolInfo = {
             stat: { 
-                color: "border-blue-500", 
+                color: "border-school-stat", 
                 title: "統計學派：冷熱號與回歸平均 (The Statistical School)", 
                 desc: `
-                    <p class="mb-3 font-medium">這是最傳統也最常見的方法。</p>
-                    <p class="font-bold mb-1 text-slate-700">核心邏輯：</p>
-                    <ul class="list-disc pl-5 mb-3 space-y-1">
-                        <li><span class="font-bold text-blue-600">慣性定律（熱號）：</span>認為機器或球組有物理偏差，或者短期內有某種趨勢，所以最近常開的號碼，下一期還會開。</li>
-                        <li><span class="font-bold text-blue-600">回歸平均（冷號）：</span>認為機率最終會公平。如果 05 號已經 100 期沒開了（遠低於理論機率），它就「該還債」了，所以賭它即將開出。</li>
+                    <p class="mb-3 font-medium text-stone-800">這是最傳統也最常見的方法。</p>
+                    <p class="font-bold mb-2 text-school-stat">核心邏輯：</p>
+                    <ul class="list-disc pl-5 mb-4 space-y-2">
+                        <li><span class="font-bold">慣性定律（熱號）：</span>認為機器或球組有物理偏差，或者短期內有某種趨勢，所以最近常開的號碼，下一期還會開。</li>
+                        <li><span class="font-bold">回歸平均（冷號）：</span>認為機率最終會公平。如果 05 號已經 100 期沒開了（遠低於理論機率），它就「該還債」了，所以賭它即將開出。</li>
                     </ul>
-                    <p class="font-bold mb-1 text-slate-700">常見手法：</p>
+                    <p class="font-bold mb-2 text-school-stat">常見手法：</p>
                     <ul class="list-disc pl-5 space-y-1">
                         <li>計算每個號碼的歷史出現次數。</li>
                         <li>計算「遺漏值」（目前已經連續幾期沒開）。</li>
@@ -299,51 +377,51 @@
                 `
             },
             pattern: { 
-                color: "border-purple-500", 
+                color: "border-school-pattern", 
                 title: "關聯性學派：拖牌與版路 (The Association/Pattern School)", 
                 desc: `
-                    <p class="mb-3 font-medium">這是台灣彩迷最喜歡研究的領域，俗稱「看版路」。</p>
-                    <p class="font-bold mb-1 text-slate-700">核心邏輯：</p>
+                    <p class="mb-3 font-medium text-stone-800">這是台灣彩迷最喜歡研究的領域，俗稱「看版路」。</p>
+                    <p class="font-bold mb-2 text-school-pattern">核心邏輯：</p>
                     <p class="mb-2">認為號碼之間有隱藏的連結。</p>
-                    <ul class="list-disc pl-5 mb-3 space-y-1">
-                        <li><span class="font-bold text-purple-600">拖牌（Conditional Probability）：</span>如果這一期開了 01，歷史數據顯示下一期特別容易開 25。這在統計上稱為「條件機率」。</li>
-                        <li><span class="font-bold text-purple-600">尾數法則：</span>認為每一期的「尾數」（例如 01, 11, 21, 31 都算 1 尾）有某種規律。</li>
-                        <li><span class="font-bold text-purple-600">連莊與連號：</span>賭上一期的號碼會重複掉下來（連莊），或是號碼會相連（如 12, 13）。</li>
+                    <ul class="list-disc pl-5 mb-4 space-y-2">
+                        <li><span class="font-bold">拖牌（Conditional Probability）：</span>如果這一期開了 01，歷史數據顯示下一期特別容易開 25。這在統計上稱為「條件機率」。</li>
+                        <li><span class="font-bold">尾數法則：</span>認為每一期的「尾數」（例如 01, 11, 21, 31 都算 1 尾）有某種規律。</li>
+                        <li><span class="font-bold">連莊與連號：</span>賭上一期的號碼會重複掉下來（連莊），或是號碼會相連（如 12, 13）。</li>
                     </ul>
-                    <p class="font-bold mb-1 text-slate-700">盲點：</p>
+                    <p class="font-bold mb-1 text-school-pattern">盲點：</p>
                     <p>人類大腦很擅長在隨機雜訊中尋找圖形（Pareidolia），很多所謂的「版路」其實只是巧合，但在短期內看起來像是一種規律。</p>
                 `
             },
             balance: { 
-                color: "border-green-500", 
+                color: "border-school-balance", 
                 title: "結構平衡學派：聰明包牌 (The Balancing School)", 
                 desc: `
-                    <p class="mb-3 font-medium">這派不預測「哪個號碼會開」，而是預測「哪種結構機率最高」。</p>
-                    <p class="font-bold mb-1 text-slate-700">核心邏輯：</p>
-                    <ul class="list-disc pl-5 mb-3 space-y-1">
-                        <li><span class="font-bold text-green-600">常態分佈：</span>雖然每個號碼機率一樣，但「組合」的機率不一樣。</li>
-                        <li><span class="font-bold text-green-600">奇偶比：</span>6 個號碼全部是偶數的機率極低。通常會選「3奇3偶」或「4奇2偶」。</li>
-                        <li><span class="font-bold text-green-600">大小比：</span>全部都是小號碼（1-24）或全部大號碼（25-49）的機率很低。</li>
-                        <li><span class="font-bold text-green-600">總和值：</span>6 個號碼加起來的總和，通常會落在一個鐘形曲線的中間區域（例如大樂透約在 120-180 之間）。</li>
+                    <p class="mb-3 font-medium text-stone-800">這派不預測「哪個號碼會開」，而是預測「哪種結構機率最高」。</p>
+                    <p class="font-bold mb-2 text-school-balance">核心邏輯：</p>
+                    <ul class="list-disc pl-5 mb-4 space-y-2">
+                        <li><span class="font-bold">常態分佈：</span>雖然每個號碼機率一樣，但「組合」的機率不一樣。</li>
+                        <li><span class="font-bold">奇偶比：</span>6 個號碼全部是偶數的機率極低。通常會選「3奇3偶」或「4奇2偶」。</li>
+                        <li><span class="font-bold">大小比：</span>全部都是小號碼（1-24）或全部大號碼（25-49）的機率很低。</li>
+                        <li><span class="font-bold">總和值：</span>6 個號碼加起來的總和，通常會落在一個鐘形曲線的中間區域（例如大樂透約在 120-180 之間）。</li>
                     </ul>
-                    <p class="font-bold mb-1 text-slate-700">應用：</p>
+                    <p class="font-bold mb-1 text-school-balance">應用：</p>
                     <p>這通常用於「刪去法」，把那些極端不合理的組合（例如 1,2,3,4,5,6）過濾掉，以節省投注成本。</p>
                 `
             },
             ai: { 
-                color: "border-amber-500", 
+                color: "border-school-ai", 
                 title: "AI 與機器學習派 (The AI/Machine Learning School)", 
                 desc: `
-                    <p class="mb-3 font-medium">這是近年來比較新的嘗試，使用 LSTM（長短期記憶模型）或神經網路。</p>
-                    <p class="font-bold mb-1 text-slate-700">核心邏輯：</p>
-                    <ul class="list-disc pl-5 mb-3 space-y-1">
+                    <p class="mb-3 font-medium text-stone-800">這是近年來比較新的嘗試，使用 LSTM（長短期記憶模型）或神經網路。</p>
+                    <p class="font-bold mb-2 text-school-ai">核心邏輯：</p>
+                    <ul class="list-disc pl-5 mb-4 space-y-2">
                         <li>把彩券開獎當作「時間序列數據」（Time Series Data），就像預測股票或天氣一樣。</li>
                         <li>丟入幾千期的歷史資料，讓電腦自己去找出人類肉眼看不出來的非線性關係。</li>
                     </ul>
-                    <p class="font-bold mb-1 text-slate-700">殘酷的現實：</p>
+                    <p class="font-bold mb-1 text-school-ai">殘酷的現實：</p>
                     <ul class="list-disc pl-5 space-y-1">
                         <li>股票是有因果關係的（公司賺錢 -> 股價漲），但彩券是「獨立隨機事件」（Independent Random Events）。</li>
-                        <li>AI 在這種純隨機數據上非常容易發生<span class="font-bold text-amber-600">「過度擬合 (Overfitting)」</span>。也就是說，AI 可以完美背下過去的歷史，但對未來的預測能力接近於零，因為過去的雜訊並不能預示未來。</li>
+                        <li>AI 在這種純隨機數據上非常容易發生<span class="font-bold">「過度擬合 (Overfitting)」</span>。也就是說，AI 可以完美背下過去的歷史，但對未來的預測能力接近於零，因為過去的雜訊並不能預示未來。</li>
                     </ul>
                 `
             }
@@ -386,7 +464,7 @@
                 for (let y = 2021; y <= 2030; y++) {
                     const opt = document.createElement('option');
                     opt.value = y;
-                    opt.innerText = `${y}年`;
+                    opt.innerText = `${y} 年`;
                     yearSelect.appendChild(opt);
                 }
             },
@@ -427,13 +505,13 @@
                         });
                     }
                     
-                    statusText.innerText = `✅ 雲端同步完成 (共 ${Object.keys(this.state.rawData).length} 種玩法)`;
-                    statusText.className = "text-sm font-bold text-green-600";
-                    statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-green-500";
+                    statusText.innerText = `✅ 系統就緒 (共 ${Object.keys(this.state.rawData).length} 種玩法)`;
+                    statusText.className = "text-sm font-bold text-school-balance";
+                    statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-school-balance";
                     statusPing.classList.add("hidden"); 
                     
                     if(fullData.last_updated) {
-                        document.getElementById('last-update-time').innerText = `更新於: ${fullData.last_updated}`;
+                        document.getElementById('last-update-time').innerText = `更新：${fullData.last_updated.split(' ')[0]}`;
                     }
 
                     this.renderGameTabs(Object.keys(this.state.rawData));
@@ -464,7 +542,6 @@
                     return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
                 });
 
-                // 過濾掉不在 CONFIG.GAMES_ORDER 裡的遊戲
                 const finalGames = sortedGames.filter(g => CONFIG.GAMES_ORDER.includes(g));
 
                 if (finalGames.length > 0 && !this.state.currentGame) {
@@ -505,13 +582,9 @@
                 if (this.state.filterPeriod) {
                     data = data.filter(item => String(item.period).includes(this.state.filterPeriod));
                 }
-                
-                // 年份過濾
                 if (this.state.filterYear) {
                     data = data.filter(item => item.date.getFullYear() === parseInt(this.state.filterYear));
                 }
-
-                // 月份過濾
                 if (this.state.filterMonth) {
                     data = data.filter(item => (item.date.getMonth() + 1) === parseInt(this.state.filterMonth));
                 }
@@ -529,12 +602,10 @@
                     const firstDate = data[data.length-1].date.toLocaleDateString();
                     document.getElementById('date-range').innerText = `${firstDate} ~ ${lastDate}`;
                     
-                    // 統計顯示 (使用過濾後的資料)
                     this.renderHotStats('stat-year', data); 
                     this.renderHotStats('stat-month', data.slice(0, 30)); 
                     this.renderHotStats('stat-recent', data.slice(0, 10));
 
-                    // 頭獎顯示
                     const jackpotEl = document.getElementById('jackpot-container');
                     const amountEl = document.getElementById('jackpot-amount');
                     if (this.state.rawJackpots[this.state.currentGame] && !this.state.filterPeriod && !this.state.filterYear && !this.state.filterMonth) {
@@ -544,7 +615,6 @@
                         jackpotEl.classList.add('hidden');
                     }
 
-                    // 列表顯示
                     const isFiltering = this.state.filterPeriod || this.state.filterYear || this.state.filterMonth;
                     listInfo.innerText = isFiltering ? `搜尋結果: ${data.length} 筆` : "顯示近 5 期";
                     this.renderHistoryList(isFiltering ? data : data.slice(0, 5));
@@ -563,23 +633,23 @@
                 
                 data.forEach(item => {
                     const tr = document.createElement('tr');
+                    tr.className = "table-row";
                     
-                    // 處理號碼球 (大字體)
-                    let numsHtml = item.numbers.slice(0, 6).map(n => `<span class="ball-sm inline-flex items-center justify-center rounded-full font-black mr-2">${n}</span>`).join('');
+                    let numsHtml = item.numbers.slice(0, 6).map(n => `<span class="ball-sm">${n}</span>`).join('');
                     
                     if (['大樂透', '威力彩'].includes(this.state.currentGame) && item.numbers.length > 6) {
                         const special = item.numbers[item.numbers.length - 1];
                         const normal = item.numbers.slice(0, item.numbers.length - 1);
-                        numsHtml = normal.map(n => `<span class="ball-sm inline-flex items-center justify-center rounded-full font-black mr-2">${n}</span>`).join('');
-                        numsHtml += `<span class="ball-sm ball-special inline-flex items-center justify-center rounded-full font-black ml-1">${special}</span>`;
+                        numsHtml = normal.map(n => `<span class="ball-sm">${n}</span>`).join('');
+                        numsHtml += `<span class="ball-sm ball-special ml-2 border-none font-black">${special}</span>`;
                     }
 
                     tr.innerHTML = `
-                        <td class="px-4 py-4 font-bold text-slate-800 whitespace-nowrap border-b border-slate-50">
-                            <div class="text-sm text-slate-400 mb-1 font-normal">${item.date.toLocaleDateString()}</div>
-                            <div class="text-lg text-blue-600">第 ${item.period} 期</div>
+                        <td class="px-6 py-5 border-b border-stone-100">
+                            <div class="text-xl font-bold text-stone-700 font-sans tracking-tight mb-1">No. ${item.period}</div>
+                            <div class="text-xs font-bold text-stone-400 bg-stone-100 inline-block px-2 py-0.5 rounded">${item.date.toLocaleDateString()}</div>
                         </td>
-                        <td class="px-4 py-4 border-b border-slate-50">
+                        <td class="px-6 py-5 border-b border-stone-100">
                             <div class="flex flex-wrap gap-1">${numsHtml}</div>
                         </td>
                     `;
@@ -590,7 +660,7 @@
             renderHotStats(elId, dataset) {
                 const el = document.getElementById(elId);
                 if (!dataset || dataset.length === 0) {
-                    el.innerHTML = '<span class="text-slate-300 text-xs">無資料</span>';
+                    el.innerHTML = '<span class="text-stone-300 text-xs">尚無統計數據</span>';
                     return;
                 }
                 const freq = {};
@@ -599,8 +669,8 @@
                 
                 el.innerHTML = sorted.map(([n, c]) => `
                     <div class="flex flex-col items-center animate-[fadeIn_0.3s_ease-out]">
-                        <div class="ball ball-hot">${n}</div>
-                        <div class="count-badge">${c}次</div>
+                        <div class="ball ball-hot mb-1">${n}</div>
+                        <div class="text-[10px] font-bold text-stone-400">${c}次</div>
                     </div>
                 `).join('');
             },
@@ -609,12 +679,12 @@
                 this.state.currentSchool = school;
                 document.querySelectorAll('.school-card').forEach(el => {
                     el.classList.remove('active');
-                    el.querySelector('.rounded-full').classList.add('opacity-0');
-                    el.querySelector('.rounded-full').classList.remove('bg-current');
+                    el.querySelector('.absolute').classList.add('opacity-0');
+                    el.querySelector('.absolute').classList.remove('bg-current');
                 });
                 const activeCard = document.querySelector(`.school-${school}`);
                 activeCard.classList.add('active');
-                const dot = activeCard.querySelector('.rounded-full');
+                const dot = activeCard.querySelector('.absolute');
                 dot.classList.remove('opacity-0');
                 dot.classList.add('bg-current');
                 this.updateDescription();
@@ -623,8 +693,8 @@
             updateDescription() {
                 const info = schoolInfo[this.state.currentSchool];
                 const container = document.getElementById('school-description');
-                container.className = `mb-6 text-sm leading-relaxed text-slate-600 bg-slate-50 p-6 rounded-xl border-l-4 ${info.color}`;
-                container.innerHTML = `<h4 class="text-xl font-bold mb-4 text-slate-800 border-b border-slate-200 pb-2">${info.title}</h4>${info.desc}`;
+                container.className = `text-sm leading-relaxed text-stone-600 bg-stone-50 p-8 rounded-2xl border-l-4 ${info.color}`;
+                container.innerHTML = `<h4 class="text-xl font-bold mb-4 text-stone-800 pb-2">${info.title}</h4>${info.desc}`;
             },
 
             runPrediction() {
@@ -642,7 +712,6 @@
 
                 for(let i=0; i<setSize; i++) {
                     let prediction = [];
-                    // 簡單調用對應演算法 (這裡省略演算法細節，沿用舊邏輯)
                     prediction = this.algoStat(data, maxN, ballsPerDraw); 
                     this.renderRow(prediction, i+1);
                 }
@@ -650,18 +719,19 @@
 
             renderRow(nums, index) {
                 const container = document.getElementById('prediction-output');
+                
                 const colors = {
-                    stat: 'bg-blue-100 text-blue-700',
+                    stat: 'bg-stone-200 text-stone-700', // 低調灰
                     pattern: 'bg-purple-100 text-purple-700',
-                    balance: 'bg-green-100 text-green-700',
-                    ai: 'bg-amber-100 text-amber-700'
+                    balance: 'bg-emerald-100 text-emerald-800',
+                    ai: 'bg-amber-100 text-amber-800'
                 };
                 const colorClass = colors[this.state.currentSchool];
                 
-                let html = `<div class="flex flex-wrap items-center justify-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-slate-100 animate-fade-in">
-                    <span class="text-xs font-bold text-slate-300 mr-2">#${index}</span>`;
+                let html = `<div class="flex flex-wrap items-center justify-center gap-3 p-4 bg-white rounded-2xl border border-stone-200 shadow-sm animate-fade-in hover:shadow-md transition">
+                    <span class="text-xs font-black text-stone-300 mr-2 tracking-widest">SET ${index}</span>`;
                 nums.forEach(n => {
-                    html += `<div class="ball ${colorClass}">${n}</div>`;
+                    html += `<div class="ball ${colorClass}" style="box-shadow: none;">${n}</div>`;
                 });
                 html += `</div>`;
                 container.innerHTML += html;
@@ -671,9 +741,7 @@
                 const freq = {};
                 data.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1));
                 const weights = {};
-                for(let i=1; i<=maxN; i++) {
-                    weights[i] = freq[i] || 1;
-                }
+                for(let i=1; i<=maxN; i++) weights[i] = freq[i] || 1;
                 return this.weightedRandomSelect(weights, maxN, count);
             },
 
@@ -685,9 +753,7 @@
                     for(let k=0; k<w; k++) pool.push(i);
                 }
                 const res = new Set();
-                while(res.size < count) {
-                    res.add(pool[Math.floor(Math.random() * pool.length)]);
-                }
+                while(res.size < count) res.add(pool[Math.floor(Math.random() * pool.length)]);
                 return Array.from(res).sort((a,b)=>a-b);
             }
         };
