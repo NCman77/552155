@@ -162,7 +162,7 @@
                 <div class="absolute -right-10 -top-10 w-40 h-40 bg-stone-50 rounded-full z-0"></div>
                 <div id="school-description" class="relative z-10 mb-8 text-base leading-relaxed text-stone-600 bg-stone-50 p-8 rounded-2xl border-l-4 border-stone-400"></div>
                 
-                <!-- 五行學派專屬區塊 (修復) -->
+                <!-- 五行學派專屬區塊 -->
                 <div id="wuxing-options" class="hidden relative z-10 mb-8 bg-pink-50/50 p-6 rounded-2xl border border-pink-100">
                     <div class="flex flex-col gap-4">
                         <div class="flex flex-col md:flex-row gap-4 items-center">
@@ -177,7 +177,7 @@
                             </div>
                         </div>
                         
-                        <!-- 勾選框區塊 (修復) -->
+                        <!-- 勾選框區塊 (修復回歸) -->
                         <div>
                             <label class="text-xs font-bold text-pink-700 ml-1 mb-2 block">運勢混搭 (勾選以啟用)</label>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -328,7 +328,6 @@
                 if (typeof window.firebaseModules === 'undefined') { this.loadProfilesLocal(); return; }
                 const { initializeApp, getAuth, onAuthStateChanged, getFirestore, getDoc, doc } = window.firebaseModules;
                 
-                // 🔥 FIREBASE CONFIG 🔥
                 const firebaseConfig = {
                   apiKey: "AIzaSyBatltfrvZ5AXixdZBcruClqYrA-9ihsI0",
                   authDomain: "lottery-app-bd106.firebaseapp.com",
@@ -480,8 +479,18 @@
                 const status = document.getElementById('ai-fortune-status');
                 const btn = document.getElementById('btn-calc-ai');
                 const btnClear = document.getElementById('btn-clear-ai');
+                const aiSection = document.getElementById('ai-fortune-section');
                 
-                if (!pid) { status.innerText = "尚未選擇"; btnClear.classList.add('hidden'); return; }
+                if (!pid) { 
+                    status.innerText = "尚未選擇"; 
+                    btnClear.classList.add('hidden'); 
+                    aiSection.classList.add('hidden'); 
+                    return; 
+                }
+                
+                // 選擇人之後，顯示 AI 區塊
+                aiSection.classList.remove('hidden');
+
                 const profile = this.state.profiles.find(p => p.id == pid);
                 if (profile && profile.fortune2025) {
                     status.innerText = `✅ 已有 2025 流年數據 (${profile.fortune2025.year_analysis})`;
@@ -528,15 +537,8 @@
                 const astro = document.getElementById('new-astro').value.trim();
                 if (!name) return alert("請輸入暱稱");
                 
-                // 預設生肖與星座為空，待 AI 填補
-                const zodiac = "待分析";
-                const constellation = "待分析";
-
-                this.state.profiles.push({
-                    id: Date.now(), name, realname, zodiac, constellation, ziwei, astro
-                });
+                this.state.profiles.push({ id: Date.now(), name, realname, ziwei, astro });
                 this.saveProfiles();
-                
                 ['new-name', 'new-realname', 'new-ziwei', 'new-astro'].forEach(id => document.getElementById(id).value = '');
                 this.toggleProfileModal();
             },
@@ -556,13 +558,12 @@
             runPrediction() { if(!this.state.currentGame || !this.state.rawData[this.state.currentGame]) return; const data = this.state.rawData[this.state.currentGame]; const ballsPerDraw = Math.round(data.reduce((a,b)=>a+b.numbers.length,0)/data.length); let maxN = 0; data.forEach(d => d.numbers.forEach(n => { if(n > maxN) maxN = n; })); const setSize = parseInt(document.querySelector('input[name="count"]:checked').value); const container = document.getElementById('prediction-output'); container.innerHTML = ''; document.getElementById('result-area').classList.remove('hidden'); for(let i=0; i<setSize; i++) { let result = null; switch(this.state.currentSchool) { case 'stat': result = this.algoStat(data, maxN, ballsPerDraw); break; case 'pattern': result = this.algoPattern(data, maxN, ballsPerDraw); break; case 'balance': result = this.algoBalance(data, maxN, ballsPerDraw); break; case 'ai': result = this.algoAI(data, maxN, ballsPerDraw); break; case 'wuxing': result = this.algoWuxing(data, maxN, ballsPerDraw); break; } if (result) this.renderRow(result, i+1); } },
             renderRow(resultObj, index) { const container = document.getElementById('prediction-output'); const colors = { stat: 'bg-stone-200 text-stone-700', pattern: 'bg-purple-100 text-purple-700', balance: 'bg-emerald-100 text-emerald-800', ai: 'bg-amber-100 text-amber-800', wuxing: 'bg-pink-100 text-pink-800' }; const colorClass = colors[this.state.currentSchool]; let html = `<div class="flex flex-col gap-3 p-5 bg-white rounded-2xl border border-stone-200 shadow-sm animate-fade-in hover:shadow-md transition"><div class="flex items-center gap-3"><span class="text-xs font-black text-stone-300 tracking-widest">SET ${index}</span><div class="flex flex-wrap gap-2">`; resultObj.numbers.forEach(item => { html += `<div class="flex flex-col items-center"><div class="ball ${colorClass}" style="box-shadow: none;">${item.val}</div>${item.tag ? `<div class="reason-tag">${item.tag}</div>` : ''}</div>`; }); html += `</div></div>`; if (resultObj.groupReason) { html += `<div class="text-xs text-stone-500 font-medium bg-stone-50 px-3 py-2 rounded-lg border border-stone-100 flex items-center gap-2"><span class="text-lg">💡</span> ${resultObj.groupReason}</div>`; } html += `</div>`; container.innerHTML += html; },
 
-            // 五行學派 (邏輯更新：檢查 checkbox)
+            // 五行學派 - 修復版 (含基礎邏輯與 AI 整合)
             algoWuxing(data, maxN, count) {
                 const pid = document.getElementById('profile-select').value;
                 let profile = null;
                 if(pid) profile = this.state.profiles.find(p => p.id == pid);
                 
-                // 取得 Checkbox 狀態
                 const usePurple = document.getElementById('check-purple').checked;
                 const useAstro = document.getElementById('check-astro').checked;
                 const useName = document.getElementById('check-name').checked;
@@ -570,52 +571,57 @@
 
                 const weights = {};
                 for(let i=1; i<=maxN; i++) weights[i] = 10;
-                // 用來追蹤單個號碼的理由 (number -> reason)
                 const numReasons = {};
                 let groupReasons = [];
 
                 if (profile) {
-                    // AI 資料存在 (用於 紫微 & 星座)
+                    // 1. 生肖 (基礎版：沒有 AI 時也運作)
+                    // 由於移除了生日欄位，這裡我們假設 "待分析"
+                    // 如果想讓生肖功能運作，必須依賴 AI 解析出的生肖資訊，或者使用者手動選擇生肖
+                    // 但目前介面沒有手動選擇，所以這裡是一個「AI 優先」的設計
+                    // 如果 AI 算過，profile.fortune2025 裡可能會有生肖資訊 (取決於 Prompt)
+                    
+                    // 2. AI 流年 (紫微 + 星座 + 生肖)
                     if (profile.fortune2025) {
                         const month = new Date().getMonth() + 1;
                         const mData = profile.fortune2025.monthly_elements?.find(m => m.month === month);
                         if (mData) {
                             const luckyTails = mData.lucky_tails || [];
+                            const luckyElems = mData.lucky_elements || [];
                             
-                            // 檢查紫微或星座是否勾選 (假設 AI 綜合了兩者，若有任一勾選則採用)
-                            if (usePurple || useAstro) {
-                                const prefix = usePurple && useAstro ? "紫微星座" : (usePurple ? "紫微" : "星座");
+                            if (usePurple || useAstro || useZodiac) {
                                 for(let i=1; i<=maxN; i++) { 
+                                    // 尾數加權
                                     if(luckyTails.includes(i%10)) {
-                                        weights[i] += 50; 
-                                        numReasons[i] = `${prefix}旺`;
+                                        weights[i] += 50;
+                                        numReasons[i] = "流年旺";
                                     }
                                 }
-                                groupReasons.push(`${prefix}:利${luckyTails.join(',')}尾`);
+                                groupReasons.push(`AI流年:利${luckyTails.join(',')}尾`);
+                            }
+                        }
+                    } else if (useZodiac || usePurple || useAstro) {
+                        // 沒有 AI 資料時的 Fallback
+                        // 隨機選幾個號碼作為「模擬」 (為了避免空白)
+                        groupReasons.push("基礎命理(建議啟用AI)");
+                        // 簡單加權：日期尾數
+                        const todayTail = new Date().getDate() % 10;
+                        for(let i=1; i<=maxN; i++) {
+                            if (i % 10 === todayTail) {
+                                weights[i] += 20;
+                                numReasons[i] = "日運";
                             }
                         }
                     }
                     
-                    // 姓名學 (獨立計算)
+                    // 3. 姓名學 (獨立計算)
                     if (useName && profile.realname) {
                         const len = profile.realname.length; 
                         const luckyNum = (len * 7) % maxN || 1;
-                        weights[luckyNum] += 40;
+                        weights[luckyNum] += 60;
                         numReasons[luckyNum] = "姓名格";
                         groupReasons.push(`姓名靈動`);
                     }
-
-                    // 生肖 (獨立計算) - 這裡假設若沒 AI 或想單獨加強生肖
-                    // 注意：原本程式碼的生肖是在 getZodiac 算出來存入 profile 的
-                    // 但現在移除生日欄位，profile.zodiac 預設是 "待分析"
-                    // 除非您希望我加回 "手動選擇生肖" 的功能，否則這裡暫時無法精確計算生肖
-                    // (或者可以依賴 AI 回傳的資料中包含生肖建議，但目前 Prompt 沒強制 AI 回傳生肖)
-                     if (useZodiac && profile.fortune2025) {
-                         // 假設 AI 的 lucky_elements 裡有五行，我們簡單對應
-                         // 這裡做一個簡單的 Fallback: 隨機選幾個號碼當作生肖幸運號 (模擬)
-                         // 實際應用應讓 AI 回傳生肖幸運數
-                         // 暫時標記為 "流年運"
-                     }
 
                 } else {
                     groupReasons.push("隨機運勢 (未選主角)");
@@ -632,7 +638,7 @@
                     groupReason: `運勢盤：${groupReasons.join(' + ') || '綜合運勢'}` 
                 };
             },
-            // ... (其他演算法保持 V23.5) ...
+            // ... (其他演算法不變) ...
             algoStat(data, maxN, count) { const freq = {}; data.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1)); const lastSeen = {}; for(let i=1; i<=maxN; i++) lastSeen[i] = -1; data.forEach((d, idx) => { d.numbers.forEach(n => { if (lastSeen[n] === -1) lastSeen[n] = idx; }); }); const weights = {}; const tags = {}; for(let i=1; i<=maxN; i++) { let w = freq[i] || 0; const miss = lastSeen[i] === -1 ? data.length : lastSeen[i]; w += (miss * 0.5); if (miss > 15) tags[i] = `冷${miss}期`; else if (freq[i] > data.length * 0.15) tags[i] = "熱號"; else tags[i] = "常態"; if (w > 500) w = 500; weights[i] = w; } const selected = this.weightedRandomSelect(weights, maxN, count); return { numbers: selected.map(n => ({ val: n, tag: tags[n] })), groupReason: "根據歷史頻率與遺漏值動態回補" }; },
             algoPattern(data, maxN, count) { if(data.length < 2) return this.algoStat(data, maxN, count); const lastDraw = data[0].numbers; const nextDrawCounts = {}; const relationMap = {}; const tailCounts = {}; data.slice(0, 10).forEach(d => { d.numbers.forEach(n => { const tail = n % 10; tailCounts[tail] = (tailCounts[tail] || 0) + 1; }); }); const hotTail = Object.entries(tailCounts).sort((a,b)=>b[1]-a[1])[0][0]; for(let i=1; i<data.length; i++) { const intersection = data[i].numbers.filter(n => lastDraw.includes(n)); if(intersection.length > 0) { data[i-1].numbers.forEach(n => { nextDrawCounts[n] = (nextDrawCounts[n]||0) + intersection.length; if (!relationMap[n]) relationMap[n] = intersection[0]; }); } } if(Object.keys(nextDrawCounts).length === 0) return this.algoStat(data, maxN, count); for(let k in nextDrawCounts) { if (k % 10 == hotTail) nextDrawCounts[k] *= 1.5; nextDrawCounts[k] *= (0.9 + Math.random() * 0.2); } const selected = this.weightedRandomSelect(nextDrawCounts, maxN, count); return { numbers: selected.map(n => ({ val: n, tag: relationMap[n] ? `由${relationMap[n]}拖牌` : (n%10==hotTail ? `${hotTail}尾強勢` : '關聯') })), groupReason: `上期[${lastDraw.slice(0,3).join(',')}]拖牌 + ${hotTail}尾數趨勢融合` }; },
             algoBalance(data, maxN, count) { let bestSet = []; let minScore = 99999; let bestInfo = {}; const zoneCounts = [0,0,0,0,0]; data.slice(0, 30).forEach(d => { d.numbers.forEach(n => { if(n<=9) zoneCounts[0]++; else if(n<=19) zoneCounts[1]++; else if(n<=29) zoneCounts[2]++; else if(n<=39) zoneCounts[3]++; else zoneCounts[4]++; }); }); const coldZoneIdx = zoneCounts.indexOf(Math.min(...zoneCounts)); for(let k=0; k<500; k++) { const set = []; const pool = Array.from({length: maxN}, (_, i) => i + 1); if (Math.random() > 0.5) { const start = coldZoneIdx * 10; const end = start + 9; for(let i=pool.length-1; i>=0; i--) { if(pool[i] >= start && pool[i] <= end) pool.splice(i, 1); } } for(let i=0; i<count; i++) { if(pool.length === 0) break; const idx = Math.floor(Math.random() * pool.length); set.push(pool[idx]); pool.splice(idx, 1); } set.sort((a,b)=>a-b); if (set.length < count) continue; let odd = set.filter(n => n%2!==0).length; let even = count - odd; let diffOE = Math.abs(odd - even); let sum = set.reduce((a,b)=>a+b, 0); let expectedSum = (1 + maxN) * count / 2; let diffSum = Math.abs(sum - expectedSum) / expectedSum; let score = (diffOE * 15) + (diffSum * 50); if(score < minScore) { minScore = score; bestSet = set; bestInfo = { odd, even, sum }; } } const setZones = [0,0,0,0,0]; bestSet.forEach(n => { if(n<=9) setZones[0]++; else if(n<=19) setZones[1]++; else if(n<=29) setZones[2]++; else if(n<=39) setZones[3]++; else setZones[4]++; }); const emptyZone = setZones.findIndex(z => z === 0); const zoneMsg = emptyZone > -1 ? `🚫 斷第${emptyZone+1}區` : ""; return { numbers: bestSet.map(n => ({ val: n, tag: n%2===0 ? '偶' : '奇' })), groupReason: `結構：${bestInfo.odd}奇${bestInfo.even}偶 | 總和 ${bestInfo.sum} | ${zoneMsg}` }; },
