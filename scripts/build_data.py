@@ -17,13 +17,24 @@ OUTPUT_FILE = os.path.join(DATA_DIR, 'lottery-data.json')
 HISTORY_YEARS = [2021, 2022, 2023, 2024, 2025]
 API_BASE = 'https://api.taiwanlottery.com/TLCAPIWeB/Lottery'
 
-# 遊戲代碼對照表 (修正 3星/4星彩代碼)
+# 遊戲代碼對照表
 GAMES = {
     '大樂透': 'Lotto649',
     '威力彩': 'SuperLotto638',
     '今彩539': 'Daily539',
-    '3星彩': 'Lotto3D',  # 修正：3D -> Lotto3D
-    '4星彩': 'Lotto4D'   # 修正：4D -> Lotto4D
+    '雙贏彩': 'Lotto1224',
+    '3星彩': '3D',
+    '4星彩': '4D'
+}
+
+# API回應中對應的鍵名
+API_RESPONSE_KEYS = {
+    'SuperLotto638': 'superLotto638Res',
+    'Lotto649': 'lotto649Res',
+    'Daily539': 'daily539Res',
+    'Lotto1224': 'lotto1224Res',
+    '3D': 'lotto3DRes',
+    '4D': 'lotto4DRes'
 }
 
 # 頭獎爬蟲目標網址
@@ -93,12 +104,10 @@ def parse_csv_line(line):
     
     game_name = cols[0].strip()
     matched_game = None
-    # 模糊比對遊戲名稱 (因為 CSV 內的名稱可能與 key 不完全相同)
-    for g_key, g_code in GAMES.items():
-        if g_key in game_name:
-            matched_game = g_key
+    for g in GAMES:
+        if g in game_name:
+            matched_game = g
             break
-            
     if not matched_game: return None
 
     # 日期解析
@@ -116,13 +125,8 @@ def parse_csv_line(line):
             val = cols[i].strip()
             if val.isdigit():
                 n = int(val)
-                # 3星/4星彩號碼可為0，其他遊戲通常大於0
                 if 0 <= n <= 99: numbers.append(n)
-        
-        # 3星彩至少3碼，其他至少2碼
-        min_len = 3 if matched_game in ['3星彩', '4星彩'] else 2
-        if len(numbers) < min_len: return None
-        
+        if len(numbers) < 2: return None
         return {'game': matched_game, 'data': {'date': final_date, 'period': cols[1], 'numbers': numbers, 'source': 'history'}}
     except: return None
 
@@ -152,114 +156,172 @@ def load_history():
 def fetch_api(db):
     print("=== Fetching Live API ===")
     months = get_target_months()
-    print(f"Target months: {len(months)} months")
+    print(f"Target months: {len(months)} months (past 4 + future 12)")
     
     for game_name, code in GAMES.items():
         existing_keys = set(f"{d['date']}_{d['period']}" for d in db[game_name])
         print(f"Processing {game_name} ({code})...")
         
         for m in months:
-            # 修正：移除 period 參數，這才是能抓到資料的關鍵
-            url = f"{API_BASE}/{code}Result?month={m}&pageNum=1&pageSize=50"
+            # 修正API網址格式，添加period參數
+            url = f"{API_BASE}/{code}Result?period&month={m}&pageNum=1&pageSize=50"
             try:
                 res = requests.get(url, headers=HEADERS, timeout=30, verify=False)
+                
                 if res.status_code != 200:
                     print(f"  [Fail] {m} -> {res.status_code}")
                     continue
                 
-                try: data = res.json()
-                except: continue
+                try: 
+                    data = res.json()
+                except Exception as e:
+                    print(f"  [JSON Error] {m}: {e}")
+                    continue
 
-                if 'content' not in data: continue
+                # 檢查API回應格式
+                rt_code = data.get('rtCode', -1)
+                if rt_code != 0:
+                    print(f"  [API Error] {m}: rtCode={rt_code}")
+                    continue
                 
-                target_list = []
-                # 模糊搜尋 List Key (例如 lotto649ResulDtoList, daily539ResulDtoList)
-                for k, v in data['content'].items():
-                    if isinstance(v, list) and 'ResulDtoList' in k:
-                        target_list = v
-                        break
+                if 'content' not in data:
+                    print(f"  [No Content] {m}")
+                    continue
                 
-                if not target_list: continue
-
+                # 取得對應遊戲的鍵名
+                response_key = API_RESPONSE_KEYS.get(code)
+                if not response_key:
+                    print(f"  [Unknown Game] No response key for {code}")
+                    continue
+                
+                # 取得開獎記錄列表
+                records = data['content'].get(response_key, [])
+                if not records:
+                    # 可能該月份還沒有開獎資料，這是正常的
+                    continue
+                
                 count = 0
-                for item in target_list:
+                for item in records:
+                    # 解析日期
                     date_raw = item.get('lotteryDate', '')
-                    date_str = date_raw.split('T')[0] if 'T' in date_raw else date_raw
-                    if not date_str: continue
-
-                    key = f"{date_str}_{item.get('period')}"
+                    if 'T' in date_raw:
+                        date_str = date_raw.split('T')[0]
+                    else:
+                        date_str = date_raw
+                    
+                    if not date_str:
+                        continue
+                    
+                    # 建立唯一鍵
+                    period = str(item.get('period', ''))
+                    key = f"{date_str}_{period}"
                     
                     if key not in existing_keys:
-                        nums = []
-                        # 智能抓取號碼 (no1~no20, winNo1~winNo6)
-                        for k, v in item.items():
-                            if ('no' in k.lower() or 'win' in k.lower()) and isinstance(v, int):
-                                # 3星/4星彩沒有 sno，其他遊戲排除 sno
-                                if k.lower() not in ['sno', 'period', 'periodno', 'superno']:
-                                    # 3星/4星彩允許 0
-                                    if v >= 0: nums.append(v)
+                        # 取得開獎號碼
+                        numbers = []
                         
-                        # 補特別號 (3星/4星除外)
-                        if item.get('sNo') is not None and int(item.get('sNo')) > 0:
-                             nums.append(int(item['sNo']))
+                        # 優先使用 drawNumberSize 欄位
+                        draw_numbers = item.get('drawNumberSize', [])
+                        if draw_numbers:
+                            numbers = [int(n) for n in draw_numbers if isinstance(n, (int, float, str)) and str(n).isdigit()]
                         
-                        # 3星/4星彩不需要去重排序，其他遊戲可保持原序
-                        if len(nums) > 0:
-                            db[game_name].append({
-                                'date': date_str,
-                                'period': item['period'],
-                                'numbers': nums,
-                                'source': 'api'
-                            })
-                            existing_keys.add(key)
-                            count += 1
+                        # 如果 drawNumberSize 沒有資料，嘗試 drawNumberAppear
+                        if not numbers:
+                            draw_numbers = item.get('drawNumberAppear', [])
+                            if draw_numbers:
+                                numbers = [int(n) for n in draw_numbers if isinstance(n, (int, float, str)) and str(n).isdigit()]
+                        
+                        # 如果還是沒有號碼，跳過這筆記錄
+                        if not numbers:
+                            continue
+                        
+                        # 添加到資料庫
+                        db[game_name].append({
+                            'date': date_str,
+                            'period': period,
+                            'numbers': numbers,
+                            'source': 'api'
+                        })
+                        existing_keys.add(key)
+                        count += 1
                 
-                if count > 0: print(f"  + API: Found {count} new records in {m}")
-                time.sleep(0.3)
+                if count > 0: 
+                    print(f"  + API: Found {count} new records in {m}")
+                
+                # 避免請求過快
+                time.sleep(0.5)
+                
+            except requests.exceptions.Timeout:
+                print(f"  [Timeout] {m}: Request timeout")
+            except requests.exceptions.ConnectionError:
+                print(f"  [Connection Error] {m}: Failed to connect")
             except Exception as e:
-                print(f"  [Error] {game_name} {m}: {e}")
+                print(f"  [Error] {game_name} {m}: {str(e)}")
 
 def save_data(db):
     print("=== Saving Data ===")
-    jackpots = {}
     
-    # 抓取頭獎
+    # 更新頭獎金額
+    jackpots = {}
     for game in JACKPOT_URLS:
         amt = get_jackpot_amount(game)
-        if amt: jackpots[game] = amt
-
-    total_records = 0
+        if amt: 
+            jackpots[game] = amt
+            print(f"  {game} jackpot: {amt}")
+    
+    # 按日期排序
     for game in db:
-        # 按日期降序
         db[game].sort(key=lambda x: x['date'], reverse=True)
-        total_records += len(db[game])
-        print(f"  {game}: {len(db[game])}")
-        
+        print(f"  {game}: {len(db[game])} records")
+    
+    # 計算總記錄數
+    total_records = sum(len(db[game]) for game in db)
+    
     final_output = {
         "last_updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "total_records": total_records,
         "jackpots": jackpots,
         "games": db
     }
-        
+    
+    # 保存到檔案
     try:
         with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
             json.dump(final_output, f, ensure_ascii=False, separators=(',', ':'))
-        print(f"✅ Successfully saved {total_records} records to {OUTPUT_FILE}")
+        print(f"Saved to {OUTPUT_FILE}")
+        print(f"Total records: {total_records}")
     except Exception as e:
-        print(f"❌ Error saving file: {e}")
+        print(f"Error saving data: {e}")
 
 def main():
     try:
         ensure_dir()
+        print("=" * 50)
+        print(f"Start time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("=" * 50)
+        
+        # 載入歷史資料
         db = load_history()
+        
+        # 取得API資料
         fetch_api(db)
+        
+        # 保存資料
         save_data(db)
+        
+        print("=" * 50)
+        print(f"End time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("=" * 50)
+        
     except Exception as e:
-        print(f"Critical: {e}")
+        print(f"Critical error: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # 確保至少有空的輸出檔案
         if not os.path.exists(OUTPUT_FILE):
             with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-                json.dump({"games":{}, "jackpots":{}}, f)
+                json.dump({"games": {}, "jackpots": {}, "last_updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}, f)
 
 if __name__ == '__main__':
     main()
