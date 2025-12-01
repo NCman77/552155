@@ -17,13 +17,13 @@ OUTPUT_FILE = os.path.join(DATA_DIR, 'lottery-data.json')
 HISTORY_YEARS = [2021, 2022, 2023, 2024, 2025]
 API_BASE = 'https://api.taiwanlottery.com/TLCAPIWeB/Lottery'
 
-# 遊戲代碼對照表 (已移除雙贏彩)
+# 遊戲代碼對照表 (修正 3星/4星彩代碼)
 GAMES = {
     '大樂透': 'Lotto649',
     '威力彩': 'SuperLotto638',
     '今彩539': 'Daily539',
-    '3星彩': '3D',
-    '4星彩': '4D'
+    '3星彩': 'Lotto3D',  # 修正：3D -> Lotto3D
+    '4星彩': 'Lotto4D'   # 修正：4D -> Lotto4D
 }
 
 # 頭獎爬蟲目標網址
@@ -32,11 +32,10 @@ JACKPOT_URLS = {
     '威力彩': 'https://www.taiwanlottery.com/lotto/result/super_lotto638'
 }
 
+# 使用您測試成功的 Header
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'application/json, text/plain, */*',
-    'Referer': 'https://www.taiwanlottery.com/',
-    'Origin': 'https://www.taiwanlottery.com'
+    'User-Agent': 'Mozilla/5.0',
+    'Referer': 'https://www.taiwanlottery.com/'
 }
 
 def ensure_dir():
@@ -44,15 +43,11 @@ def ensure_dir():
         os.makedirs(DATA_DIR)
 
 def get_target_months():
-    """ 
-    動態生成月份列表：
-    1. 過去 4 個月 (確保最近的開獎資料不漏接)
-    2. 未來 12 個月 (滿足您希望支援到 2030 的需求，程式會自動隨時間推進)
-    """
+    """ 生成過去4個月和未來12個月的月份列表 """
     today = datetime.date.today()
     months = []
     
-    # 過去 4 個月
+    # 過去4個月 (包含本月)
     for i in range(4):
         month = today.month - i
         year = today.year
@@ -61,7 +56,7 @@ def get_target_months():
             year -= 1
         months.append(f"{year}-{month:02d}")
     
-    # 未來 12 個月
+    # 未來12個月 (從下個月開始)
     for i in range(1, 13):
         month = today.month + i
         year = today.year
@@ -70,9 +65,11 @@ def get_target_months():
             year += 1
         months.append(f"{year}-{month:02d}")
     
+    # 移除重複並排序
     return sorted(list(set(months)))
 
 def get_jackpot_amount(game_name):
+    """ 從網頁 HTML 爬取目前頭獎累積金額 """
     if game_name not in JACKPOT_URLS: return None
     url = JACKPOT_URLS[game_name]
     print(f"Scraping jackpot for {game_name}...")
@@ -88,6 +85,7 @@ def get_jackpot_amount(game_name):
         return None
 
 def parse_csv_line(line):
+    """ 解析歷史 ZIP 檔 """
     line = line.replace('\ufeff', '').strip()
     if not line: return None
     cols = [c.strip().replace('"', '') for c in line.split(',')]
@@ -95,12 +93,15 @@ def parse_csv_line(line):
     
     game_name = cols[0].strip()
     matched_game = None
-    for g in GAMES:
-        if g in game_name:
-            matched_game = g
+    # 模糊比對遊戲名稱 (因為 CSV 內的名稱可能與 key 不完全相同)
+    for g_key, g_code in GAMES.items():
+        if g_key in game_name:
+            matched_game = g_key
             break
+            
     if not matched_game: return None
 
+    # 日期解析
     match = re.search(r'(\d{3,4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})', cols[2].strip())
     final_date = ""
     if match:
@@ -115,8 +116,13 @@ def parse_csv_line(line):
             val = cols[i].strip()
             if val.isdigit():
                 n = int(val)
+                # 3星/4星彩號碼可為0，其他遊戲通常大於0
                 if 0 <= n <= 99: numbers.append(n)
-        if len(numbers) < 2: return None
+        
+        # 3星彩至少3碼，其他至少2碼
+        min_len = 3 if matched_game in ['3星彩', '4星彩'] else 2
+        if len(numbers) < min_len: return None
+        
         return {'game': matched_game, 'data': {'date': final_date, 'period': cols[1], 'numbers': numbers, 'source': 'history'}}
     except: return None
 
@@ -146,17 +152,20 @@ def load_history():
 def fetch_api(db):
     print("=== Fetching Live API ===")
     months = get_target_months()
-    print(f"Target months: {months}")
+    print(f"Target months: {len(months)} months")
     
     for game_name, code in GAMES.items():
         existing_keys = set(f"{d['date']}_{d['period']}" for d in db[game_name])
         print(f"Processing {game_name} ({code})...")
         
         for m in months:
+            # 修正：移除 period 參數，這才是能抓到資料的關鍵
             url = f"{API_BASE}/{code}Result?month={m}&pageNum=1&pageSize=50"
             try:
                 res = requests.get(url, headers=HEADERS, timeout=30, verify=False)
-                if res.status_code != 200: continue
+                if res.status_code != 200:
+                    print(f"  [Fail] {m} -> {res.status_code}")
+                    continue
                 
                 try: data = res.json()
                 except: continue
@@ -164,6 +173,7 @@ def fetch_api(db):
                 if 'content' not in data: continue
                 
                 target_list = []
+                # 模糊搜尋 List Key (例如 lotto649ResulDtoList, daily539ResulDtoList)
                 for k, v in data['content'].items():
                     if isinstance(v, list) and 'ResulDtoList' in k:
                         target_list = v
@@ -173,18 +183,27 @@ def fetch_api(db):
 
                 count = 0
                 for item in target_list:
-                    date_raw = item['lotteryDate']
+                    date_raw = item.get('lotteryDate', '')
                     date_str = date_raw.split('T')[0] if 'T' in date_raw else date_raw
-                    key = f"{date_str}_{item['period']}"
+                    if not date_str: continue
+
+                    key = f"{date_str}_{item.get('period')}"
                     
                     if key not in existing_keys:
                         nums = []
+                        # 智能抓取號碼 (no1~no20, winNo1~winNo6)
                         for k, v in item.items():
                             if ('no' in k.lower() or 'win' in k.lower()) and isinstance(v, int):
+                                # 3星/4星彩沒有 sno，其他遊戲排除 sno
                                 if k.lower() not in ['sno', 'period', 'periodno', 'superno']:
-                                    if v > 0: nums.append(v)
-                        if item.get('sNo'): nums.append(int(item['sNo']))
+                                    # 3星/4星彩允許 0
+                                    if v >= 0: nums.append(v)
                         
+                        # 補特別號 (3星/4星除外)
+                        if item.get('sNo') is not None and int(item.get('sNo')) > 0:
+                             nums.append(int(item['sNo']))
+                        
+                        # 3星/4星彩不需要去重排序，其他遊戲可保持原序
                         if len(nums) > 0:
                             db[game_name].append({
                                 'date': date_str,
@@ -196,29 +215,39 @@ def fetch_api(db):
                             count += 1
                 
                 if count > 0: print(f"  + API: Found {count} new records in {m}")
-                time.sleep(0.2)
+                time.sleep(0.3)
             except Exception as e:
                 print(f"  [Error] {game_name} {m}: {e}")
 
 def save_data(db):
     print("=== Saving Data ===")
     jackpots = {}
+    
+    # 抓取頭獎
     for game in JACKPOT_URLS:
         amt = get_jackpot_amount(game)
         if amt: jackpots[game] = amt
 
+    total_records = 0
     for game in db:
+        # 按日期降序
         db[game].sort(key=lambda x: x['date'], reverse=True)
+        total_records += len(db[game])
+        print(f"  {game}: {len(db[game])}")
         
     final_output = {
         "last_updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "total_records": total_records,
         "jackpots": jackpots,
         "games": db
     }
         
-    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-        json.dump(final_output, f, ensure_ascii=False, separators=(',', ':'))
-    print(f"Saved to {OUTPUT_FILE}")
+    try:
+        with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+            json.dump(final_output, f, ensure_ascii=False, separators=(',', ':'))
+        print(f"✅ Successfully saved {total_records} records to {OUTPUT_FILE}")
+    except Exception as e:
+        print(f"❌ Error saving file: {e}")
 
 def main():
     try:
