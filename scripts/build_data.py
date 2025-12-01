@@ -5,6 +5,7 @@ import zipfile
 import io
 import datetime
 import re
+import time
 
 # 設定
 DATA_DIR = 'data'
@@ -22,7 +23,7 @@ GAMES = {
     '4星彩': '4D'
 }
 
-# 偽裝成瀏覽器的 Header，避免被阻擋
+# 偽裝成瀏覽器的 Header
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'application/json, text/plain, */*',
@@ -35,6 +36,8 @@ def ensure_dir():
         os.makedirs(DATA_DIR)
 
 def parse_csv_line(line):
+    # 移除 BOM 並去除空白
+    line = line.replace('\ufeff', '').strip()
     cols = [c.strip().replace('"', '') for c in line.split(',')]
     if len(cols) < 8: return None
     
@@ -52,14 +55,10 @@ def parse_csv_line(line):
 
     try:
         numbers = []
-        # 大部分的獎號在 6-11 欄，但不同遊戲可能不同，這裡做通用防護
+        # 大部分的獎號在 6-11 欄
         for i in range(6, len(cols)): 
             if cols[i].isdigit():
                 numbers.append(int(cols[i]))
-            # 遇到非數字或空值停止 (簡易判斷)
-        
-        # 簡單過濾掉特別號 (通常最後一個是特別號，視遊戲而定，這裡簡化處理全部存入)
-        # 前端分析時會自動根據遊戲規則取用
         
         return {
             'game': game_name,
@@ -80,7 +79,7 @@ def load_history():
     for year in HISTORY_YEARS:
         zip_path = os.path.join(DATA_DIR, f'{year}.zip')
         if not os.path.exists(zip_path):
-            print(f"Warning: {zip_path} not found.")
+            print(f"Skipping {zip_path} (not found)")
             continue
             
         try:
@@ -88,7 +87,8 @@ def load_history():
                 for filename in z.namelist():
                     if filename.lower().endswith('.csv') and not filename.startswith('__'):
                         with z.open(filename) as f:
-                            content = f.read().decode('big5', errors='ignore')
+                            # 嘗試使用 cp950 (Big5) 解碼
+                            content = f.read().decode('cp950', errors='ignore')
                             lines = content.splitlines()
                             for line in lines:
                                 if not line.strip(): continue
@@ -112,38 +112,45 @@ def fetch_api(db):
     months = sorted(list(set(months)))
     
     for game_name, code in GAMES.items():
+        # 建立現有資料的 Key 集合以避免重複
         existing_keys = set(f"{d['date']}_{d['period']}" for d in db[game_name])
         
         for m in months:
             url = f"{API_BASE}/{code}Result?period&month={m}&pageNum=1&pageSize=50"
             print(f"Requesting {game_name} ({m})...")
             try:
-                # 加上 Headers 是關鍵
-                res = requests.get(url, headers=HEADERS, timeout=10)
-                
+                res = requests.get(url, headers=HEADERS, timeout=30)
                 if res.status_code != 200:
                     print(f"Failed {url}: {res.status_code}")
                     continue
                     
                 data = res.json()
-                if 'content' in data and f'{code.lower()}ResulDtoList' in data['content']:
-                    # 注意: API 回傳的 key 可能大小寫不一致，需動態判斷
-                    list_key = f'{code.lower()}ResulDtoList'
-                    for item in data['content'][list_key]:
-                        date_str = item['lotteryDate'].split('T')[0]
+                # API 回傳結構檢查
+                content_key = f'{code.lower()}ResulDtoList'
+                # 有些 API 回傳 key 可能略有不同，這裡可以加強判斷，但目前台彩規則一致
+                
+                if 'content' in data and content_key in data['content']:
+                    for item in data['content'][content_key]:
+                        # 日期處理
+                        date_raw = item['lotteryDate']
+                        date_str = date_raw.split('T')[0] if 'T' in date_raw else date_raw
                         key = f"{date_str}_{item['period']}"
                         
                         if key not in existing_keys:
-                            # 動態抓取 no1...noN
                             nums = []
-                            for i in range(1, 20): # 預設最多抓20球
+                            # 一般號 (no1 ~ no20)
+                            for i in range(1, 21):
                                 k = f'no{i}'
                                 if item.get(k):
-                                    nums.append(int(item[k]))
+                                    try:
+                                        nums.append(int(item[k]))
+                                    except: pass
                             
-                            # 特別號處理
+                            # 特別號
                             if item.get('sNo'):
-                                nums.append(int(item['sNo']))
+                                try:
+                                    nums.append(int(item['sNo']))
+                                except: pass
 
                             db[game_name].append({
                                 'date': date_str,
@@ -152,24 +159,42 @@ def fetch_api(db):
                                 'source': 'api'
                             })
                             existing_keys.add(key)
+                
+                # 避免請求太快被擋
+                time.sleep(0.5)
+                
             except Exception as e:
                 print(f"API Error ({game_name} {m}): {e}")
 
 def save_data(db):
-    # Sort and Save
+    # 排序與儲存
+    print("Saving data...")
+    count = 0
     for game in db:
-        # Sort by date desc
+        # 按日期降序
         db[game].sort(key=lambda x: x['date'], reverse=True)
+        count += len(db[game])
         
-    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-        json.dump(db, f, ensure_ascii=False, separators=(',', ':'))
-    print(f"Saved to {OUTPUT_FILE}")
+    try:
+        with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+            json.dump(db, f, ensure_ascii=False, separators=(',', ':'))
+        print(f"Successfully saved {count} records to {OUTPUT_FILE}")
+    except Exception as e:
+        print(f"Error saving file: {e}")
 
 def main():
-    ensure_dir()
-    db = load_history()
-    fetch_api(db)
-    save_data(db)
+    try:
+        ensure_dir()
+        db = load_history()
+        fetch_api(db)
+        save_data(db)
+    except Exception as e:
+        print(f"Critical Error in main: {e}")
+        # 即使失敗，也要嘗試建立一個空檔案，避免前端 404
+        if not os.path.exists(OUTPUT_FILE):
+            print("Creating empty backup file...")
+            with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+                json.dump({}, f)
 
 if __name__ == '__main__':
     main()
