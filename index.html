@@ -214,7 +214,7 @@
         <div class="text-center mt-12 text-xs text-stone-300 font-bold pb-4">DESIGNED FOR LOTTERY ANALYSIS</div>
     </div>
 
-    <!-- 個人檔案 Modal (完整版) -->
+    <!-- 個人檔案 Modal -->
     <div id="profile-modal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0" id="profile-modal-content">
             <div class="bg-stone-900 px-6 py-5 flex justify-between items-center">
@@ -253,16 +253,6 @@
                         <div class="flex gap-3">
                             <input type="text" id="new-name" placeholder="暱稱 (必填)" class="custom-input w-1/3 rounded-xl px-4 py-2 text-sm">
                             <input type="text" id="new-realname" placeholder="真實姓名" class="custom-input w-2/3 rounded-xl px-4 py-2 text-sm">
-                        </div>
-                        <div class="flex gap-3">
-                            <div class="w-1/2">
-                                <label class="text-[10px] text-stone-400 ml-1">出生日期</label>
-                                <input type="date" id="new-birth" class="custom-input w-full rounded-xl px-4 py-2 text-sm">
-                            </div>
-                            <div class="w-1/2">
-                                <label class="text-[10px] text-stone-400 ml-1">出生時間</label>
-                                <input type="time" id="new-time" class="custom-input w-full rounded-xl px-4 py-2 text-sm">
-                            </div>
                         </div>
                         <!-- 詳細文字輸入區 -->
                         <div>
@@ -329,15 +319,11 @@
                 document.getElementById('search-year').addEventListener('change', (e) => { this.state.filterYear = e.target.value; this.updateDashboard(); });
                 document.getElementById('search-month').addEventListener('change', (e) => { this.state.filterMonth = e.target.value; this.updateDashboard(); });
             },
-            
-            // === Firebase Logic ===
             async initFirebase() {
                 if (typeof window.firebaseModules === 'undefined') { this.loadProfilesLocal(); return; }
                 const { initializeApp, getAuth, onAuthStateChanged, getFirestore, getDoc, doc } = window.firebaseModules;
                 
-                // ============================================================
-                // 🔥 FIREBASE CONFIG 🔥
-                // ============================================================
+                // 🔥 FIREBASE CONFIG (已填入)
                 const firebaseConfig = {
                   apiKey: "AIzaSyBatltfrvZ5AXixdZBcruClqYrA-9ihsI0",
                   authDomain: "lottery-app-bd106.firebaseapp.com",
@@ -346,27 +332,24 @@
                   messagingSenderId: "13138331714",
                   appId: "1:13138331714:web:194ac3ff9513d19d9845db"
                 };
-                // ============================================================
 
-                if (firebaseConfig.apiKey) {
-                     try {
-                         const app = initializeApp(firebaseConfig);
-                         const auth = getAuth(app);
-                         this.state.db = getFirestore(app);
-                         onAuthStateChanged(auth, async (user) => {
-                            this.state.user = user; this.updateAuthUI(user);
-                            if (user) {
-                                await this.loadProfilesCloud(user.uid);
-                                const ref = doc(this.state.db, 'artifacts', 'lottery-app', 'users', user.uid, 'settings', 'api');
-                                const snap = await getDoc(ref);
-                                if(snap.exists()) {
-                                    this.state.apiKey = snap.data().key;
-                                    document.getElementById('gemini-api-key').value = this.state.apiKey;
-                                }
-                            } else { this.loadProfilesLocal(); }
-                         });
-                     } catch(e) { console.error(e); this.loadProfilesLocal(); }
-                } else { console.warn("Firebase Config Missing"); this.loadProfilesLocal(); }
+                try {
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    this.state.db = getFirestore(app);
+                    onAuthStateChanged(auth, async (user) => {
+                    this.state.user = user; this.updateAuthUI(user);
+                    if (user) {
+                        await this.loadProfilesCloud(user.uid);
+                        const ref = doc(this.state.db, 'artifacts', 'lottery-app', 'users', user.uid, 'settings', 'api');
+                        const snap = await getDoc(ref);
+                        if(snap.exists()) {
+                            this.state.apiKey = snap.data().key;
+                            document.getElementById('gemini-api-key').value = this.state.apiKey;
+                        }
+                    } else { this.loadProfilesLocal(); }
+                    });
+                } catch(e) { console.error(e); this.loadProfilesLocal(); }
             },
             updateAuthUI(user) {
                 const loginBtn = document.getElementById('btn-login'); const userInfo = document.getElementById('user-info');
@@ -436,7 +419,6 @@
                 const btn = document.getElementById('btn-calc-ai');
                 btn.disabled = true; btn.classList.add('opacity-50');
 
-                // 動態構建 System Prompt
                 let roleDescription = "";
                 if (hasZiwei && hasAstro) {
                     roleDescription = "你是一位精通東西方命理的宗師。請綜合『紫微斗數（三合/四化/飛星）』與『西洋占星（相位/元素）』，找出兩者共振的流年運勢。";
@@ -454,7 +436,6 @@
                     
                     【命主資料】
                     姓名：${profile.name} (${profile.realname || '未填'})
-                    生辰：${profile.birth} ${profile.time}
                     ${hasZiwei ? `紫微命盤：${profile.ziwei}` : ""}
                     ${hasAstro ? `星盤資料：${profile.astro}` : ""}
                     
@@ -535,25 +516,27 @@
             saveProfiles() { if (this.state.user) this.saveProfilesCloud(); localStorage.setItem('lottery_profiles', JSON.stringify(this.state.profiles)); this.renderProfileSelect(); this.renderProfileList(); },
             addProfile() {
                 const name = document.getElementById('new-name').value.trim();
-                const birth = document.getElementById('new-birth').value;
                 const realname = document.getElementById('new-realname').value.trim();
                 const ziwei = document.getElementById('new-ziwei').value.trim();
                 const astro = document.getElementById('new-astro').value.trim();
-                if (!name || !birth) return alert("請輸入暱稱與生日");
-                const date = new Date(birth);
-                const zodiac = this.getZodiac(date.getFullYear());
-                const constellation = this.getConstellation(date.getMonth() + 1, date.getDate());
-                this.state.profiles.push({ id: Date.now(), name, birth, time: document.getElementById('new-time').value, realname, zodiac, constellation, ziwei, astro });
+                if (!name) return alert("請輸入暱稱");
+                
+                // 預設生肖與星座為空，待 AI 填補
+                const zodiac = "待分析";
+                const constellation = "待分析";
+
+                this.state.profiles.push({
+                    id: Date.now(), name, realname, zodiac, constellation, ziwei, astro
+                });
                 this.saveProfiles();
-                ['new-name', 'new-birth', 'new-realname', 'new-ziwei', 'new-astro'].forEach(id => document.getElementById(id).value = '');
+                
+                ['new-name', 'new-realname', 'new-ziwei', 'new-astro'].forEach(id => document.getElementById(id).value = '');
                 this.toggleProfileModal();
             },
             deleteProfile(id) { if(confirm('確定刪除?')) { this.state.profiles = this.state.profiles.filter(p => p.id !== id); this.saveProfiles(); } },
             toggleProfileModal() { const modal = document.getElementById('profile-modal'); const content = document.getElementById('profile-modal-content'); if (modal.classList.contains('hidden')) { modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10); } else { content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => modal.classList.add('hidden'), 200); } },
-            renderProfileList() { const list = document.getElementById('profile-list'); list.innerHTML = this.state.profiles.length === 0 ? '<p class="text-sm text-stone-400 text-center">尚無檔案</p>' : ''; this.state.profiles.forEach(p => { list.innerHTML += `<div class="flex justify-between items-center bg-stone-50 p-3 rounded-xl border border-stone-100"><div><div class="font-bold text-stone-700">${p.name} <span class="text-[10px] text-stone-400">(${p.zodiac}/${p.constellation})</span></div></div><button onclick="app.deleteProfile(${p.id})" class="text-red-400 text-sm hover:text-red-600">刪除</button></div>`; }); },
-            renderProfileSelect() { const sel = document.getElementById('profile-select'); sel.innerHTML = '<option value="">請選擇運勢主角...</option>'; this.state.profiles.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.innerText = `${p.name} (${p.zodiac})`; sel.appendChild(opt); }); },
-            getZodiac(year) { const animals = ['猴','雞','狗','豬','鼠','牛','虎','兔','龍','蛇','馬','羊']; return animals[year % 12]; },
-            getConstellation(m, d) { const s = "摩羯水瓶雙魚牡羊金牛雙子巨蟹獅子處女天秤天蠍射手摩羯"; const arr = [20,19,21,21,21,22,23,23,23,23,22,22]; return s.substr(m*2 - (d < arr[m-1] ? 2 : 0), 2) + "座"; },
+            renderProfileList() { const list = document.getElementById('profile-list'); list.innerHTML = this.state.profiles.length === 0 ? '<p class="text-sm text-stone-400 text-center">尚無檔案</p>' : ''; this.state.profiles.forEach(p => { list.innerHTML += `<div class="flex justify-between items-center bg-stone-50 p-3 rounded-xl border border-stone-100"><div><div class="font-bold text-stone-700">${p.name} <span class="text-[10px] text-stone-400">(${p.realname || '未填名'})</span></div><div class="text-xs text-stone-400 text-stone-400/70">命盤資料:${p.ziwei?'有':'無'} / 星盤:${p.astro?'有':'無'}</div></div><button onclick="app.deleteProfile(${p.id})" class="text-red-400 text-sm hover:text-red-600">刪除</button></div>`; }); },
+            renderProfileSelect() { const sel = document.getElementById('profile-select'); sel.innerHTML = '<option value="">請選擇運勢主角...</option>'; this.state.profiles.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.innerText = `${p.name}`; sel.appendChild(opt); }); },
             populateYearSelect() { const yearSelect = document.getElementById('search-year'); for (let y = 2021; y <= 2030; y++) { const opt = document.createElement('option'); opt.value = y; opt.innerText = `${y} 年`; yearSelect.appendChild(opt); } },
             async initFetch() { const statusText = document.getElementById('status-text'); const statusDot = document.getElementById('status-dot'); const statusPing = document.getElementById('status-ping'); if (window.location.protocol === 'blob:' || window.location.protocol === 'file:') { statusText.innerText = "⚠️ 預覽模式 (無資料)"; statusPing.classList.add("hidden"); this.renderGameTabs([]); return; } statusText.innerText = "連線雲端資料庫..."; try { const response = await fetch(`${CONFIG.JSON_URL}?t=${new Date().getTime()}`); if (!response.ok) throw new Error("Cloud data missing"); const fullData = await response.json(); if (fullData.games) { this.state.rawData = fullData.games; this.state.rawJackpots = fullData.jackpots || {}; } else { this.state.rawData = fullData; this.state.rawJackpots = {}; } for (let game in this.state.rawData) { this.state.rawData[game] = this.state.rawData[game].map(item => { item.date = new Date(item.date); return item; }); } statusText.innerText = `✅ 系統就緒 (共 ${Object.keys(this.state.rawData).length} 種玩法)`; statusText.className = "text-sm font-bold text-school-balance"; statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-school-balance"; statusPing.classList.add("hidden"); if(fullData.last_updated) { document.getElementById('last-update-time').innerText = `更新：${fullData.last_updated.split(' ')[0]}`; } this.renderGameTabs(Object.keys(this.state.rawData)); document.getElementById('dashboard-area').classList.remove('hidden'); document.getElementById('strategy-area').classList.remove('hidden'); } catch (e) { console.error(e); statusText.innerText = "⚠️ 無法讀取資料"; statusText.className = "text-sm font-bold text-red-500"; statusPing.classList.add("hidden"); this.renderGameTabs([]); } },
             renderGameTabs(availableGames) { const container = document.getElementById('game-tabs-container'); container.innerHTML = ''; if (availableGames.length === 0) { container.innerHTML = '<div class="game-tab">等待資料...</div>'; return; } const sortedGames = availableGames.sort((a, b) => { const idxA = CONFIG.GAMES_ORDER.indexOf(a); const idxB = CONFIG.GAMES_ORDER.indexOf(b); return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB); }); const finalGames = sortedGames.filter(g => CONFIG.GAMES_ORDER.includes(g)); if (finalGames.length > 0 && !this.state.currentGame) { this.state.currentGame = finalGames[0]; this.updateDashboard(); } finalGames.forEach(game => { const btn = document.createElement('div'); btn.className = `game-tab ${game === this.state.currentGame ? 'active' : ''}`; btn.innerText = game; btn.onclick = () => { this.state.currentGame = game; this.resetFilter(); document.querySelectorAll('.game-tab').forEach(el => el.classList.remove('active')); btn.classList.add('active'); this.updateDashboard(); }; container.appendChild(btn); }); },
