@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>台彩全能分析儀 V19</title>
+    <title>台彩全能分析儀 V20</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
@@ -40,32 +40,18 @@
         .school-balance { color: #10B981; }
         .school-ai { color: #F59E0B; }
 
-        /* 遊戲標籤樣式 (橫向滑動) */
-        .game-tab { 
-            white-space: nowrap; 
-            padding: 10px 20px; 
-            border-radius: 99px; 
-            font-weight: 900; 
-            transition: all 0.3s; 
-            color: #64748b; 
-            background: #e2e8f0; 
-            cursor: pointer; 
-            font-size: 1.1rem;
-        }
-        .game-tab.active { 
-            background: #1e293b; /* slate-800 */
-            color: white; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
-        }
-
         .ball { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: 1px 1px 3px rgba(0,0,0,0.15); font-size: 15px; position: relative; z-index: 1; }
         .ball-hot { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #b91c1c; border: 2px solid #f87171; }
+        .ball-sm { width: 28px; height: 28px; font-size: 12px; border: 1px solid #e2e8f0; background: white; color: #475569; }
+        .ball-special { border-color: #f87171; color: #dc2626; background: #fef2f2; }
+
         .stat-box { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        
-        /* 次數標籤 */
         .count-badge { font-size: 0.7rem; background-color: #f1f5f9; padding: 2px 6px; border-radius: 99px; margin-top: -8px; padding-top: 10px; z-index: 0; color: #64748b; font-weight: bold; border: 1px solid #e2e8f0; }
         
-        /* 隱藏滾動條但保留功能 */
+        /* 遊戲標籤樣式 */
+        .game-tab { white-space: nowrap; padding: 10px 20px; border-radius: 99px; font-weight: 900; transition: all 0.3s; color: #64748b; background: #e2e8f0; cursor: pointer; font-size: 1.1rem; }
+        .game-tab.active { background: #1e293b; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -75,7 +61,7 @@
     <div class="max-w-5xl mx-auto">
         
         <header class="text-center mb-6">
-            <h1 class="text-3xl md:text-4xl font-black mb-2 text-slate-800 tracking-tight">台彩全能分析儀 <span class="text-blue-600">V19</span></h1>
+            <h1 class="text-3xl md:text-4xl font-black mb-2 text-slate-800 tracking-tight">台彩全能分析儀 <span class="text-blue-600">V20</span></h1>
             <p class="text-slate-500 text-sm">AI 自動同步 • 雲端大數據 • 四大戰術流派</p>
         </header>
 
@@ -88,13 +74,8 @@
                 </span>
                 <span class="text-sm font-bold text-slate-600" id="status-text">系統待命中...</span>
             </div>
-            <!-- 手動上傳按鈕 (隱藏式，備用) -->
-            <input type="file" id="fileInput" accept=".zip" class="hidden" />
-            <button onclick="document.getElementById('fileInput').click()" class="text-xs text-blue-500 font-bold hover:text-blue-700 underline">
-                手動上傳 ZIP
-            </button>
+            <div class="text-xs text-slate-400 font-bold" id="last-update-time"></div>
         </div>
-        <div id="load-msg" class="text-center mb-4 text-xs text-green-600 font-bold hidden"></div>
 
         <!-- 橫向遊戲選擇器 -->
         <div class="mb-8 overflow-x-auto hide-scrollbar pb-2">
@@ -104,42 +85,65 @@
         </div>
 
         <div id="dashboard-area" class="hidden animate-[fadeIn_0.5s_ease-out]">
+            <!-- 儀表板頭部 -->
             <div class="bg-slate-800 text-white rounded-t-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">🎯</span>
-                    <span class="text-lg font-bold" id="current-game-title">大樂透</span>
+                <div class="flex flex-col gap-1 w-full md:w-auto">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">🎯</span>
+                        <span class="text-lg font-bold" id="current-game-title">大樂透</span>
+                        <span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300" id="latest-period">--期</span>
+                    </div>
+                    <!-- 頭獎顯示區 -->
+                    <div id="jackpot-container" class="hidden mt-1">
+                        <span class="text-xs text-yellow-400 font-bold mr-1">目前頭獎</span>
+                        <span class="text-xl font-black text-yellow-300 tracking-wider" id="jackpot-amount">$ --</span>
+                    </div>
                 </div>
-                <div class="text-xs text-slate-400">
+                <div class="text-xs text-slate-400 text-right">
                     資料庫總筆數：<span id="total-count" class="text-white font-bold text-base">0</span> 期
-                    <span class="mx-2">|</span>
-                    資料區間：<span id="date-range" class="text-white">...</span>
+                    <span class="mx-2 hidden md:inline">|</span>
+                    <br class="md:hidden">
+                    區間：<span id="date-range" class="text-white">...</span>
                 </div>
             </div>
 
-            <div class="bg-slate-100 border-x border-b border-slate-200 p-4 rounded-b-2xl mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                
+            <!-- 統計方塊 -->
+            <div class="bg-slate-100 border-x border-slate-200 p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="stat-box">
                     <h4 class="font-bold text-slate-500 text-xs uppercase mb-3 flex justify-between">
-                        🔥 本年度熱門 (Top 5)
-                        <span class="text-slate-300" id="year-label">Year</span>
+                        🔥 本年度熱門 (Top 5) <span class="text-slate-300" id="year-label">Year</span>
                     </h4>
                     <div id="stat-year" class="flex flex-wrap gap-3 justify-center"></div>
                 </div>
-
                 <div class="stat-box">
                     <h4 class="font-bold text-slate-500 text-xs uppercase mb-3 flex justify-between">
-                        📅 本月份熱門 (Top 5)
-                        <span class="text-slate-300" id="month-label">Month</span>
+                        📅 本月份熱門 (Top 5) <span class="text-slate-300" id="month-label">Month</span>
                     </h4>
                     <div id="stat-month" class="flex flex-wrap gap-3 justify-center"></div>
                 </div>
-
                 <div class="stat-box">
                     <h4 class="font-bold text-slate-500 text-xs uppercase mb-3 flex justify-between">
-                        ⚡ 近 10 期熱門 (Top 5)
-                        <span class="text-slate-300">Trend</span>
+                        ⚡ 近 10 期熱門 (Top 5) <span class="text-slate-300">Trend</span>
                     </h4>
                     <div id="stat-recent" class="flex flex-wrap gap-3 justify-center"></div>
+                </div>
+            </div>
+
+            <!-- 近 5 期開獎列表 (新功能) -->
+            <div class="bg-white border-x border-b border-slate-200 p-4 rounded-b-2xl mb-8">
+                <h4 class="font-bold text-slate-700 text-sm mb-3 border-l-4 border-blue-500 pl-3">📅 近 5 期開獎結果</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="text-xs text-slate-400 uppercase bg-slate-50">
+                            <tr>
+                                <th class="px-3 py-2 rounded-l-lg">期別 / 日期</th>
+                                <th class="px-3 py-2 rounded-r-lg">開出號碼</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-list" class="divide-y divide-slate-100">
+                            <!-- JS 填充 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -189,7 +193,6 @@
                 <div id="school-description" class="mb-6 text-sm leading-relaxed text-slate-600 bg-slate-50 p-5 rounded-xl border-l-4 border-blue-500"></div>
 
                 <div class="flex flex-col items-center gap-6">
-                    
                     <div class="flex items-center bg-slate-100 p-1.5 rounded-lg">
                         <span class="text-xs font-bold text-slate-500 px-3">生成組數：</span>
                         <div class="flex gap-1">
@@ -225,12 +228,12 @@
     <script>
         // === 1. 設定區 ===
         const CONFIG = {
-            // 您的 GitHub Actions 產生的資料位置
             JSON_URL: 'data/lottery-data.json',
             GAMES_ORDER: ['大樂透', '威力彩', '今彩539', '雙贏彩', '3星彩', '4星彩']
         };
 
         let rawData = {}; 
+        let rawJackpots = {}; // 新增：頭獎金額
         let currentGame = "";
         let currentSchool = "stat"; 
 
@@ -252,68 +255,70 @@
             const statusDot = document.getElementById('status-dot');
             const statusPing = document.getElementById('status-ping');
             
-            // 檢測是否為預覽環境 (Blob/File)
-            const isLocalOrPreview = window.location.protocol === 'blob:' || window.location.protocol === 'file:';
-            
-            if (isLocalOrPreview) {
-                console.warn("Detected local/preview environment. Skipping cloud fetch.");
-                statusText.innerText = "⚠️ 預覽模式：請手動上傳 ZIP";
-                statusText.className = "text-sm font-bold text-slate-500";
-                statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-slate-400";
+            // 檢測環境
+            if (window.location.protocol === 'blob:' || window.location.protocol === 'file:') {
+                statusText.innerText = "⚠️ 預覽模式 (請部署至 GitHub)";
                 statusPing.classList.add("hidden");
-                // 預設顯示空的 Tabs 讓介面不壞掉
                 renderGameTabs([]);
                 return; 
             }
 
-            statusText.innerText = "正在連線至雲端資料庫...";
-            statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-yellow-500";
+            statusText.innerText = "連線雲端資料庫...";
             
             try {
-                // 加上時間戳記防止快取
                 const response = await fetch(`${CONFIG.JSON_URL}?t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error("Cloud data missing");
                 
-                const data = await response.json();
+                const fullData = await response.json();
                 
-                // 處理日期格式 (字串 -> Date)
-                for (let key in data) {
-                    data[key] = data[key].map(item => {
+                // V20 新結構支援
+                if (fullData.games) {
+                    // 新版 JSON
+                    rawData = fullData.games;
+                    rawJackpots = fullData.jackpots || {};
+                } else {
+                    // 舊版兼容
+                    rawData = fullData;
+                    rawJackpots = {};
+                }
+                
+                // 日期轉換
+                for (let game in rawData) {
+                    rawData[game] = rawData[game].map(item => {
                         item.date = new Date(item.date);
                         return item;
                     });
                 }
                 
-                rawData = data;
-                
-                // 更新狀態 UI
-                statusText.innerText = `✅ 雲端同步完成 (共 ${Object.keys(data).length} 種玩法)`;
+                statusText.innerText = `✅ 雲端同步完成 (共 ${Object.keys(rawData).length} 種玩法)`;
                 statusText.className = "text-sm font-bold text-green-600";
                 statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-green-500";
                 statusPing.classList.add("hidden"); 
                 
-                // 顯示介面
-                renderGameTabs(Object.keys(data));
+                if(fullData.last_updated) {
+                    document.getElementById('last-update-time').innerText = `更新於: ${fullData.last_updated}`;
+                }
+
+                renderGameTabs(Object.keys(rawData));
                 document.getElementById('dashboard-area').classList.remove('hidden');
                 document.getElementById('strategy-area').classList.remove('hidden');
                 
             } catch (e) {
                 console.error(e);
-                statusText.innerText = "⚠️ 無法讀取雲端資料 (請確認 Actions 是否已跑完)";
+                statusText.innerText = "⚠️ 無法讀取資料 (請確認 GitHub Actions)";
                 statusText.className = "text-sm font-bold text-red-500";
-                statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
                 statusPing.classList.add("hidden");
-                renderGameTabs([]); // 保持介面結構
+                renderGameTabs([]); 
             }
         }
 
-        // === 3. 介面渲染邏輯 (Tab Style) ===
+        // === 3. 介面渲染 ===
         function renderGameTabs(availableGames) {
             const container = document.getElementById('game-tabs-container');
             container.innerHTML = '';
             
             if (availableGames.length === 0) {
-                container.innerHTML = '<div class="game-tab">等待資料中...</div>';
+                container.innerHTML = '<div class="game-tab">等待資料...</div>';
                 return;
             }
 
@@ -349,11 +354,14 @@
             document.getElementById('current-game-title').innerText = currentGame;
             document.getElementById('total-count').innerText = data.length;
             
+            // 顯示最新期數
             if (data.length > 0) {
+                document.getElementById('latest-period').innerText = `${data[0].period}期`;
                 const lastDate = data[0].date.toLocaleDateString();
                 const firstDate = data[data.length-1].date.toLocaleDateString();
                 document.getElementById('date-range').innerText = `${firstDate} ~ ${lastDate}`;
                 
+                // 統計數據
                 const currentYear = data[0].date.getFullYear();
                 document.getElementById('year-label').innerText = currentYear;
                 const yearData = data.filter(d => d.date.getFullYear() === currentYear);
@@ -365,7 +373,51 @@
                 renderHotStats('stat-year', yearData);
                 renderHotStats('stat-month', monthData);
                 renderHotStats('stat-recent', data.slice(0, 10));
+
+                // 顯示頭獎金額
+                const jackpotEl = document.getElementById('jackpot-container');
+                const amountEl = document.getElementById('jackpot-amount');
+                if (rawJackpots[currentGame]) {
+                    jackpotEl.classList.remove('hidden');
+                    amountEl.innerText = `$${rawJackpots[currentGame]}`;
+                } else {
+                    jackpotEl.classList.add('hidden');
+                }
+
+                // 渲染近 5 期
+                renderHistoryList(data.slice(0, 5));
             }
+        }
+
+        function renderHistoryList(data) {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                let numsHtml = item.numbers.slice(0, 6).map(n => `<span class="ball-sm inline-flex items-center justify-center rounded-full font-bold mr-1">${n}</span>`).join('');
+                
+                // 檢查是否有特別號 (通常是最後一個)
+                // 這裡簡單判定：如果長度 > 6 且不是三星彩四星彩，最後一個可能是特別號
+                if (['大樂透', '威力彩'].includes(currentGame) && item.numbers.length > 6) {
+                    const special = item.numbers[item.numbers.length - 1];
+                    // 移除最後一個，重新渲染一般號
+                    const normal = item.numbers.slice(0, item.numbers.length - 1);
+                    numsHtml = normal.map(n => `<span class="ball-sm inline-flex items-center justify-center rounded-full font-bold mr-1">${n}</span>`).join('');
+                    numsHtml += `<span class="ball-sm ball-special inline-flex items-center justify-center rounded-full font-bold ml-1">${special}</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="px-3 py-3 font-medium text-slate-900 whitespace-nowrap">
+                        <div class="text-xs text-slate-400">${item.date.toLocaleDateString()}</div>
+                        <div class="font-bold text-blue-600">第 ${item.period} 期</div>
+                    </td>
+                    <td class="px-3 py-3">
+                        <div class="flex flex-wrap gap-1">${numsHtml}</div>
+                    </td>
+                `;
+                list.appendChild(tr);
+            });
         }
 
         function renderHotStats(elId, dataset) {
@@ -408,71 +460,11 @@
             container.innerHTML = `<h4 class="text-lg font-bold mb-2 text-slate-800">${info.title}</h4><p>${info.desc}</p>`;
         }
 
-        // === 檔案處理 (手動上傳 ZIP 保留) ===
-        document.getElementById('fileInput').addEventListener('change', async (e) => {
-            if(e.target.files.length > 0) {
-                document.getElementById('load-msg').innerText = "分析中...";
-                document.getElementById('load-msg').classList.remove('hidden');
-                
-                const data = await parseZip(e.target.files[0]);
-                if(Object.keys(data).length > 0) {
-                    rawData = data;
-                    document.getElementById('load-msg').innerText = `✅ 成功載入 ${Object.keys(data).length} 種玩法`;
-                    // 更新狀態列為手動模式
-                    document.getElementById('status-text').innerText = "📂 使用手動上傳資料";
-                    document.getElementById('status-text').className = "text-sm font-bold text-blue-600";
-                    renderGameTabs(Object.keys(data));
-                    document.getElementById('dashboard-area').classList.remove('hidden');
-                    document.getElementById('strategy-area').classList.remove('hidden');
-                }
-            }
-        });
-
-        async function parseZip(file) {
-            const zip = await JSZip.loadAsync(file, { decodeFileName: (bytes) => new TextDecoder("big5").decode(bytes) });
-            let result = {};
-            for (const filename of Object.keys(zip.files)) {
-                if (zip.files[filename].dir || filename.startsWith('__')) continue;
-                if (filename.toLowerCase().endsWith('.csv')) {
-                    const content = await zip.files[filename].async('arraybuffer');
-                    const text = new TextDecoder("big5").decode(content);
-                    const gameName = filename.split(/[_.]/)[0];
-                    const parsed = parseCSVManual(text);
-                    if(parsed.length > 0) result[gameName] = parsed;
-                }
-            }
-            return result;
-        }
-
-        function parseCSVManual(text) {
-            const lines = text.split(/\r\n|\n/);
-            let result = [];
-            for (let line of lines) {
-                line = line.trim();
-                if (!line) continue;
-                let parts = line.split(',').map(p => p.replace(/"/g, '').trim());
-                let dateObj = null;
-                let nums = [];
-                for (let col of parts) {
-                    const dateMatch = col.match(/^(\d{3,4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
-                    if (dateMatch && !dateObj) {
-                        let y = parseInt(dateMatch[1]);
-                        if(y<1911) y+=1911;
-                        dateObj = new Date(y, parseInt(dateMatch[2])-1, parseInt(dateMatch[3]));
-                        continue;
-                    }
-                    let n = parseInt(col);
-                    if (!isNaN(n) && n >= 0 && n <= 99) nums.push(n);
-                }
-                if (dateObj && nums.length >= 2) result.push({ date: dateObj, numbers: nums });
-            }
-            return result.sort((a, b) => b.date - a.date);
-        }
-
         // === 演算法核心 ===
         function runPrediction() {
             if(!currentGame || !rawData[currentGame]) return;
             const data = rawData[currentGame];
+            // 計算球數
             const ballsPerDraw = Math.round(data.reduce((a,b)=>a+b.numbers.length,0)/data.length);
             
             let maxN = 0;
@@ -489,7 +481,6 @@
                 else if (currentSchool === 'pattern') prediction = algoPattern(data, maxN, ballsPerDraw);
                 else if (currentSchool === 'balance') prediction = algoBalance(data, maxN, ballsPerDraw);
                 else if (currentSchool === 'ai') prediction = algoAI(data, maxN, ballsPerDraw);
-                
                 renderRow(prediction, i+1);
             }
         }
