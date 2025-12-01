@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>台彩全能分析儀 V19</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Zen Maru Gothic"', 'sans-serif'] },
+                    colors: {
+                        school: {
+                            stat: '#3B82F6',    // Blue
+                            pattern: '#8B5CF6', // Purple
+                            balance: '#10B981', // Green
+                            ai: '#F59E0B'       // Amber
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #f8fafc; }
+        .school-card { transition: all 0.2s; cursor: pointer; border: 2px solid transparent; }
+        .school-card:hover { transform: translateY(-2px); }
+        .school-card.active { border-color: currentColor; background-color: white; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        
+        /* 派系特定樣式 */
+        .school-stat { color: #3B82F6; }
+        .school-pattern { color: #8B5CF6; }
+        .school-balance { color: #10B981; }
+        .school-ai { color: #F59E0B; }
+
+        /* 遊戲標籤樣式 (橫向滑動) */
+        .game-tab { 
+            white-space: nowrap; 
+            padding: 10px 20px; 
+            border-radius: 99px; 
+            font-weight: 900; 
+            transition: all 0.3s; 
+            color: #64748b; 
+            background: #e2e8f0; 
+            cursor: pointer; 
+            font-size: 1.1rem;
+        }
+        .game-tab.active { 
+            background: #1e293b; /* slate-800 */
+            color: white; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+        }
+
+        .ball { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: 1px 1px 3px rgba(0,0,0,0.15); font-size: 15px; position: relative; z-index: 1; }
+        .ball-hot { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #b91c1c; border: 2px solid #f87171; }
+        .stat-box { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        /* 次數標籤 */
+        .count-badge { font-size: 0.7rem; background-color: #f1f5f9; padding: 2px 6px; border-radius: 99px; margin-top: -8px; padding-top: 10px; z-index: 0; color: #64748b; font-weight: bold; border: 1px solid #e2e8f0; }
+        
+        /* 隱藏滾動條但保留功能 */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-slate-700 p-4 md:p-6 min-h-screen">
+
+    <div class="max-w-5xl mx-auto">
+        
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-black mb-2 text-slate-800 tracking-tight">台彩全能分析儀 <span class="text-blue-600">V19</span></h1>
+            <p class="text-slate-500 text-sm">AI 自動同步 • 雲端大數據 • 四大戰術流派</p>
+        </header>
+
+        <!-- 狀態列 -->
+        <div class="bg-white rounded-xl p-4 shadow-sm mb-6 border border-slate-200 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" id="status-ping"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" id="status-dot"></span>
+                </span>
+                <span class="text-sm font-bold text-slate-600" id="status-text">系統待命中...</span>
+            </div>
+            <!-- 手動上傳按鈕 (隱藏式，備用) -->
+            <input type="file" id="fileInput" accept=".zip" class="hidden" />
+            <button onclick="document.getElementById('fileInput').click()" class="text-xs text-blue-500 font-bold hover:text-blue-700 underline">
+                手動上傳 ZIP
+            </button>
+        </div>
+        <div id="load-msg" class="text-center mb-4 text-xs text-green-600 font-bold hidden"></div>
+
+        <!-- 橫向遊戲選擇器 -->
+        <div class="mb-8 overflow-x-auto hide-scrollbar pb-2">
+            <div class="flex gap-3" id="game-tabs-container">
+                <div class="game-tab active">載入中...</div>
+            </div>
+        </div>
+
+        <div id="dashboard-area" class="hidden animate-[fadeIn_0.5s_ease-out]">
+            <div class="bg-slate-800 text-white rounded-t-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🎯</span>
+                    <span class="text-lg font-bold" id="current-game-title">大樂透</span>
+                </div>
+                <div class="text-xs text-slate-400">
+                    資料庫總筆數：<span id="total-count" class="text-white font-bold text-base">0</span> 期
+                    <span class="mx-2">|</span>
+                    資料區間：<span id="date-range" class="text-white">...</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-100 border-x border-b border-slate-200 p-4 rounded-b-2xl mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <div class="stat-box">
+                    <h4 class="font-bold text-slate-500 text-xs uppercase mb-3 flex justify-between">
+                        🔥 本年度熱門 (Top 5)
+                        <span class="text-slate-300" id="year-label">Year</span>
+                    </h4>
+                    <div id="stat-year" class="flex flex-wrap gap-3 justify-center"></div>
+                </div>
+
+                <div class="stat-box">
+                    <h4 class="font-bold text-slate-500 text-xs uppercase mb-3 flex justify-between">
+                        📅 本月份熱門 (Top 5)
+                        <span class="text-slate-300" id="month-label">Month</span>
+                    </h4>
+                    <div id="stat-month" class="flex flex-wrap gap-3 justify-center"></div>
+                </div>
+
+                <div class="stat-box">
+                    <h4 class="font-bold text-slate-500 text-xs uppercase mb-3 flex justify-between">
+                        ⚡ 近 10 期熱門 (Top 5)
+                        <span class="text-slate-300">Trend</span>
+                    </h4>
+                    <div id="stat-recent" class="flex flex-wrap gap-3 justify-center"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="strategy-area" class="hidden">
+            <h3 class="font-bold text-xl mb-4 text-center text-slate-800">🧠 選擇您的戰術流派</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="school-card school-stat bg-white p-4 rounded-xl shadow-sm relative active" onclick="selectSchool('stat')">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="text-2xl">📊</div>
+                        <h4 class="font-bold">統計學派</h4>
+                    </div>
+                    <p class="text-xs opacity-70 leading-tight">冷熱號 / 回歸平均</p>
+                    <div class="absolute top-4 right-4 w-3 h-3 rounded-full border-2 border-current bg-current" id="dot-stat"></div>
+                </div>
+
+                <div class="school-card school-pattern bg-white p-4 rounded-xl shadow-sm relative" onclick="selectSchool('pattern')">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="text-2xl">🔗</div>
+                        <h4 class="font-bold">關聯性學派</h4>
+                    </div>
+                    <p class="text-xs opacity-70 leading-tight">拖牌 / 版路 / 尾數</p>
+                    <div class="absolute top-4 right-4 w-3 h-3 rounded-full border-2 border-current opacity-0" id="dot-pattern"></div>
+                </div>
+
+                <div class="school-card school-balance bg-white p-4 rounded-xl shadow-sm relative" onclick="selectSchool('balance')">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="text-2xl">⚖️</div>
+                        <h4 class="font-bold">結構平衡學派</h4>
+                    </div>
+                    <p class="text-xs opacity-70 leading-tight">聰明包牌 / 奇偶比</p>
+                    <div class="absolute top-4 right-4 w-3 h-3 rounded-full border-2 border-current opacity-0" id="dot-balance"></div>
+                </div>
+
+                <div class="school-card school-ai bg-white p-4 rounded-xl shadow-sm relative" onclick="selectSchool('ai')">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="text-2xl">🤖</div>
+                        <h4 class="font-bold">AI 機器學習</h4>
+                    </div>
+                    <p class="text-xs opacity-70 leading-tight">時間序列 / 趨勢</p>
+                    <div class="absolute top-4 right-4 w-3 h-3 rounded-full border-2 border-current opacity-0" id="dot-ai"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
+                <div id="school-description" class="mb-6 text-sm leading-relaxed text-slate-600 bg-slate-50 p-5 rounded-xl border-l-4 border-blue-500"></div>
+
+                <div class="flex flex-col items-center gap-6">
+                    
+                    <div class="flex items-center bg-slate-100 p-1.5 rounded-lg">
+                        <span class="text-xs font-bold text-slate-500 px-3">生成組數：</span>
+                        <div class="flex gap-1">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="count" value="1" class="peer hidden" checked>
+                                <span class="block px-4 py-1.5 rounded bg-white text-slate-400 peer-checked:bg-slate-800 peer-checked:text-white text-sm font-bold transition shadow-sm">1 組</span>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="count" value="3" class="peer hidden">
+                                <span class="block px-4 py-1.5 rounded bg-white text-slate-400 peer-checked:bg-slate-800 peer-checked:text-white text-sm font-bold transition shadow-sm">3 組</span>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="count" value="5" class="peer hidden">
+                                <span class="block px-4 py-1.5 rounded bg-white text-slate-400 peer-checked:bg-slate-800 peer-checked:text-white text-sm font-bold transition shadow-sm">5 組</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button onclick="runPrediction()" class="w-full md:w-auto bg-gradient-to-r from-slate-800 to-slate-900 text-white px-12 py-4 rounded-xl font-black text-lg shadow-xl shadow-slate-300 hover:scale-105 hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <span>🚀</span> 執行運算與生成
+                    </button>
+                </div>
+
+                <div id="result-area" class="mt-8 hidden border-t border-slate-100 pt-8">
+                    <h4 class="text-center font-bold text-slate-400 mb-6 text-sm">推薦號碼組合</h4>
+                    <div id="prediction-output" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // === 1. 設定區 ===
+        const CONFIG = {
+            // 您的 GitHub Actions 產生的資料位置
+            JSON_URL: 'data/lottery-data.json',
+            GAMES_ORDER: ['大樂透', '威力彩', '今彩539', '雙贏彩', '3星彩', '4星彩']
+        };
+
+        let rawData = {}; 
+        let currentGame = "";
+        let currentSchool = "stat"; 
+
+        const schoolInfo = {
+            stat: { color: "border-blue-500", title: "統計學派：冷熱號與回歸平均", desc: "基於大數法則，分析冷熱號碼與遺漏值，尋找機率回補點。" },
+            pattern: { color: "border-purple-500", title: "關聯性學派：拖牌與版路", desc: "分析號碼之間的連動關係（拖牌）與尾數規律。" },
+            balance: { color: "border-green-500", title: "結構平衡學派：聰明包牌", desc: "透過奇偶比、大小比、總和值等結構條件過濾極端組合。" },
+            ai: { color: "border-amber-500", title: "AI 與機器學習派", desc: "模擬類神經網路權重，對近期趨勢給予動態加權。" }
+        };
+
+        // === 2. 初始化 ===
+        window.onload = function() {
+            updateDescription();
+            initFetch();
+        };
+
+        async function initFetch() {
+            const statusText = document.getElementById('status-text');
+            const statusDot = document.getElementById('status-dot');
+            const statusPing = document.getElementById('status-ping');
+            
+            // 檢測是否為預覽環境 (Blob/File)
+            const isLocalOrPreview = window.location.protocol === 'blob:' || window.location.protocol === 'file:';
+            
+            if (isLocalOrPreview) {
+                console.warn("Detected local/preview environment. Skipping cloud fetch.");
+                statusText.innerText = "⚠️ 預覽模式：請手動上傳 ZIP";
+                statusText.className = "text-sm font-bold text-slate-500";
+                statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-slate-400";
+                statusPing.classList.add("hidden");
+                // 預設顯示空的 Tabs 讓介面不壞掉
+                renderGameTabs([]);
+                return; 
+            }
+
+            statusText.innerText = "正在連線至雲端資料庫...";
+            statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-yellow-500";
+            
+            try {
+                // 加上時間戳記防止快取
+                const response = await fetch(`${CONFIG.JSON_URL}?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error("Cloud data missing");
+                
+                const data = await response.json();
+                
+                // 處理日期格式 (字串 -> Date)
+                for (let key in data) {
+                    data[key] = data[key].map(item => {
+                        item.date = new Date(item.date);
+                        return item;
+                    });
+                }
+                
+                rawData = data;
+                
+                // 更新狀態 UI
+                statusText.innerText = `✅ 雲端同步完成 (共 ${Object.keys(data).length} 種玩法)`;
+                statusText.className = "text-sm font-bold text-green-600";
+                statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-green-500";
+                statusPing.classList.add("hidden"); 
+                
+                // 顯示介面
+                renderGameTabs(Object.keys(data));
+                document.getElementById('dashboard-area').classList.remove('hidden');
+                document.getElementById('strategy-area').classList.remove('hidden');
+                
+            } catch (e) {
+                console.error(e);
+                statusText.innerText = "⚠️ 無法讀取雲端資料 (請確認 Actions 是否已跑完)";
+                statusText.className = "text-sm font-bold text-red-500";
+                statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
+                statusPing.classList.add("hidden");
+                renderGameTabs([]); // 保持介面結構
+            }
+        }
+
+        // === 3. 介面渲染邏輯 (Tab Style) ===
+        function renderGameTabs(availableGames) {
+            const container = document.getElementById('game-tabs-container');
+            container.innerHTML = '';
+            
+            if (availableGames.length === 0) {
+                container.innerHTML = '<div class="game-tab">等待資料中...</div>';
+                return;
+            }
+
+            const sortedGames = availableGames.sort((a, b) => {
+                const idxA = CONFIG.GAMES_ORDER.indexOf(a);
+                const idxB = CONFIG.GAMES_ORDER.indexOf(b);
+                return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+            });
+
+            if (sortedGames.length > 0 && !currentGame) {
+                currentGame = sortedGames[0];
+                updateDashboard();
+            }
+
+            sortedGames.forEach(game => {
+                const btn = document.createElement('div');
+                btn.className = `game-tab ${game === currentGame ? 'active' : ''}`;
+                btn.innerText = game;
+                btn.onclick = () => {
+                    currentGame = game;
+                    document.querySelectorAll('.game-tab').forEach(el => el.classList.remove('active'));
+                    btn.classList.add('active');
+                    updateDashboard();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function updateDashboard() {
+            if (!rawData[currentGame]) return;
+            const data = rawData[currentGame];
+            
+            document.getElementById('current-game-title').innerText = currentGame;
+            document.getElementById('total-count').innerText = data.length;
+            
+            if (data.length > 0) {
+                const lastDate = data[0].date.toLocaleDateString();
+                const firstDate = data[data.length-1].date.toLocaleDateString();
+                document.getElementById('date-range').innerText = `${firstDate} ~ ${lastDate}`;
+                
+                const currentYear = data[0].date.getFullYear();
+                document.getElementById('year-label').innerText = currentYear;
+                const yearData = data.filter(d => d.date.getFullYear() === currentYear);
+                
+                const currentMonth = data[0].date.getMonth();
+                document.getElementById('month-label').innerText = (currentMonth + 1) + "月";
+                const monthData = yearData.filter(d => d.date.getMonth() === currentMonth);
+                
+                renderHotStats('stat-year', yearData);
+                renderHotStats('stat-month', monthData);
+                renderHotStats('stat-recent', data.slice(0, 10));
+            }
+        }
+
+        function renderHotStats(elId, dataset) {
+            const el = document.getElementById(elId);
+            if (!dataset || dataset.length === 0) {
+                el.innerHTML = '<span class="text-slate-300 text-xs">無資料</span>';
+                return;
+            }
+            const freq = {};
+            dataset.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1));
+            const sorted = Object.entries(freq).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            
+            el.innerHTML = sorted.map(([n, c]) => `
+                <div class="flex flex-col items-center animate-[fadeIn_0.3s_ease-out]">
+                    <div class="ball ball-hot">${n}</div>
+                    <div class="count-badge">${c}次</div>
+                </div>
+            `).join('');
+        }
+
+        function selectSchool(school) {
+            currentSchool = school;
+            document.querySelectorAll('.school-card').forEach(el => {
+                el.classList.remove('active');
+                el.querySelector('.rounded-full').classList.add('opacity-0');
+                el.querySelector('.rounded-full').classList.remove('bg-current');
+            });
+            const activeCard = document.querySelector(`.school-${school}`);
+            activeCard.classList.add('active');
+            const dot = activeCard.querySelector('.rounded-full');
+            dot.classList.remove('opacity-0');
+            dot.classList.add('bg-current');
+            updateDescription();
+        }
+
+        function updateDescription() {
+            const info = schoolInfo[currentSchool];
+            const container = document.getElementById('school-description');
+            container.className = `mb-6 text-sm leading-relaxed text-slate-600 bg-slate-50 p-5 rounded-xl border-l-4 ${info.color}`;
+            container.innerHTML = `<h4 class="text-lg font-bold mb-2 text-slate-800">${info.title}</h4><p>${info.desc}</p>`;
+        }
+
+        // === 檔案處理 (手動上傳 ZIP 保留) ===
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            if(e.target.files.length > 0) {
+                document.getElementById('load-msg').innerText = "分析中...";
+                document.getElementById('load-msg').classList.remove('hidden');
+                
+                const data = await parseZip(e.target.files[0]);
+                if(Object.keys(data).length > 0) {
+                    rawData = data;
+                    document.getElementById('load-msg').innerText = `✅ 成功載入 ${Object.keys(data).length} 種玩法`;
+                    // 更新狀態列為手動模式
+                    document.getElementById('status-text').innerText = "📂 使用手動上傳資料";
+                    document.getElementById('status-text').className = "text-sm font-bold text-blue-600";
+                    renderGameTabs(Object.keys(data));
+                    document.getElementById('dashboard-area').classList.remove('hidden');
+                    document.getElementById('strategy-area').classList.remove('hidden');
+                }
+            }
+        });
+
+        async function parseZip(file) {
+            const zip = await JSZip.loadAsync(file, { decodeFileName: (bytes) => new TextDecoder("big5").decode(bytes) });
+            let result = {};
+            for (const filename of Object.keys(zip.files)) {
+                if (zip.files[filename].dir || filename.startsWith('__')) continue;
+                if (filename.toLowerCase().endsWith('.csv')) {
+                    const content = await zip.files[filename].async('arraybuffer');
+                    const text = new TextDecoder("big5").decode(content);
+                    const gameName = filename.split(/[_.]/)[0];
+                    const parsed = parseCSVManual(text);
+                    if(parsed.length > 0) result[gameName] = parsed;
+                }
+            }
+            return result;
+        }
+
+        function parseCSVManual(text) {
+            const lines = text.split(/\r\n|\n/);
+            let result = [];
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                let parts = line.split(',').map(p => p.replace(/"/g, '').trim());
+                let dateObj = null;
+                let nums = [];
+                for (let col of parts) {
+                    const dateMatch = col.match(/^(\d{3,4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+                    if (dateMatch && !dateObj) {
+                        let y = parseInt(dateMatch[1]);
+                        if(y<1911) y+=1911;
+                        dateObj = new Date(y, parseInt(dateMatch[2])-1, parseInt(dateMatch[3]));
+                        continue;
+                    }
+                    let n = parseInt(col);
+                    if (!isNaN(n) && n >= 0 && n <= 99) nums.push(n);
+                }
+                if (dateObj && nums.length >= 2) result.push({ date: dateObj, numbers: nums });
+            }
+            return result.sort((a, b) => b.date - a.date);
+        }
+
+        // === 演算法核心 ===
+        function runPrediction() {
+            if(!currentGame || !rawData[currentGame]) return;
+            const data = rawData[currentGame];
+            const ballsPerDraw = Math.round(data.reduce((a,b)=>a+b.numbers.length,0)/data.length);
+            
+            let maxN = 0;
+            data.forEach(d => d.numbers.forEach(n => { if(n > maxN) maxN = n; }));
+
+            const setSize = parseInt(document.querySelector('input[name="count"]:checked').value);
+            const container = document.getElementById('prediction-output');
+            container.innerHTML = '';
+            document.getElementById('result-area').classList.remove('hidden');
+
+            for(let i=0; i<setSize; i++) {
+                let prediction = [];
+                if (currentSchool === 'stat') prediction = algoStat(data, maxN, ballsPerDraw);
+                else if (currentSchool === 'pattern') prediction = algoPattern(data, maxN, ballsPerDraw);
+                else if (currentSchool === 'balance') prediction = algoBalance(data, maxN, ballsPerDraw);
+                else if (currentSchool === 'ai') prediction = algoAI(data, maxN, ballsPerDraw);
+                
+                renderRow(prediction, i+1);
+            }
+        }
+
+        function renderRow(nums, index) {
+            const container = document.getElementById('prediction-output');
+            const colors = {
+                stat: 'bg-blue-100 text-blue-700',
+                pattern: 'bg-purple-100 text-purple-700',
+                balance: 'bg-green-100 text-green-700',
+                ai: 'bg-amber-100 text-amber-700'
+            };
+            const colorClass = colors[currentSchool];
+            
+            let html = `<div class="flex flex-wrap items-center justify-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-slate-100 animate-[fadeIn_0.5s_ease-out]">
+                <span class="text-xs font-bold text-slate-300 mr-2">#${index}</span>`;
+            nums.forEach(n => {
+                html += `<div class="ball ${colorClass}">${n}</div>`;
+            });
+            html += `</div>`;
+            container.innerHTML += html;
+        }
+
+        // 簡化版演算法 (與 V15 邏輯相同)
+        function algoStat(data, maxN, count) {
+            const freq = {};
+            data.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1));
+            const last50 = new Set();
+            data.slice(0, 50).forEach(d => d.numbers.forEach(n => last50.add(n)));
+            const weights = {};
+            for(let i=1; i<=maxN; i++) {
+                let w = freq[i] || 0;
+                if(!last50.has(i)) w += (data.length / 10);
+                w = w * (0.95 + Math.random() * 0.1);
+                weights[i] = w;
+            }
+            return weightedRandomSelect(weights, maxN, count);
+        }
+        function algoPattern(data, maxN, count) {
+            if(data.length < 2) return algoStat(data, maxN, count);
+            const lastDraw = data[0].numbers;
+            const nextDrawCounts = {};
+            for(let i=1; i<data.length; i++) {
+                const intersection = data[i].numbers.filter(n => lastDraw.includes(n));
+                if(intersection.length > 0) {
+                    data[i-1].numbers.forEach(n => nextDrawCounts[n] = (nextDrawCounts[n]||0) + intersection.length);
+                }
+            }
+            if(Object.keys(nextDrawCounts).length === 0) return algoStat(data, maxN, count);
+            for(let k in nextDrawCounts) nextDrawCounts[k] = nextDrawCounts[k] * (0.9 + Math.random() * 0.2);
+            return weightedRandomSelect(nextDrawCounts, maxN, count);
+        }
+        function algoBalance(data, maxN, count) {
+            let bestSet = []; let minScore = 9999;
+            for(let k=0; k<500; k++) {
+                const set = algoStat(data, maxN, count); // 借用 stat 隨機生成
+                let odd = set.filter(n => n%2!==0).length;
+                let even = count - odd;
+                let diffOE = Math.abs(odd - even);
+                let sum = set.reduce((a,b)=>a+b, 0);
+                let expectedSum = (1 + maxN) * count / 2;
+                let diffSum = Math.abs(sum - expectedSum) / expectedSum;
+                let score = diffOE * 10 + diffSum * 100;
+                if(score < minScore) { minScore = score; bestSet = set; }
+            }
+            return bestSet;
+        }
+        function algoAI(data, maxN, count) {
+            const weights = {};
+            data.forEach((d, idx) => {
+                const weight = 1000 / (idx + 10);
+                d.numbers.forEach(n => weights[n] = (weights[n]||0) + weight);
+            });
+            return weightedRandomSelect(weights, maxN, count);
+        }
+        function weightedRandomSelect(weights, maxN, count) {
+            let pool = [];
+            for(let i=1; i<=maxN; i++) {
+                let w = weights[i] || 1;
+                w = Math.ceil(w); if(w > 100) w = 100;
+                for(let k=0; k<w; k++) pool.push(i);
+            }
+            const res = new Set();
+            while(res.size < count) {
+                res.add(pool[Math.floor(Math.random() * pool.length)]);
+            }
+            return Array.from(res).sort((a,b)=>a-b);
+        }
+    </script>
+</body>
+</html>
