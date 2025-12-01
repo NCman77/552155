@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>台彩全能分析儀 V21</title>
+    <title>台彩全能分析儀</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
@@ -29,7 +29,7 @@
     </script>
 
     <style>
-        body { background-color: #f8fafc; }
+        body { background-color: #f8fafc; color: #475569; }
         .school-card { transition: all 0.2s; cursor: pointer; border: 2px solid transparent; }
         .school-card:hover { transform: translateY(-2px); }
         .school-card.active { border-color: currentColor; background-color: white; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
@@ -41,7 +41,9 @@
 
         .ball { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: 1px 1px 3px rgba(0,0,0,0.15); font-size: 15px; position: relative; z-index: 1; }
         .ball-hot { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #b91c1c; border: 2px solid #f87171; }
-        .ball-sm { width: 28px; height: 28px; font-size: 12px; border: 1px solid #e2e8f0; background: white; color: #475569; }
+        
+        /* 加大列表中的球號 */
+        .ball-sm { width: 34px; height: 34px; font-size: 15px; border: 1px solid #e2e8f0; background: white; color: #334155; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .ball-special { border-color: #f87171; color: #dc2626; background: #fef2f2; }
 
         .stat-box { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -52,6 +54,15 @@
         
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 自定義下拉選單樣式 */
+        .custom-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+        }
     </style>
 </head>
 <body class="text-slate-700 p-4 md:p-6 min-h-screen">
@@ -59,7 +70,7 @@
     <div class="max-w-5xl mx-auto">
         
         <header class="text-center mb-6">
-            <h1 class="text-3xl md:text-4xl font-black mb-2 text-slate-800 tracking-tight">台彩全能分析儀 <span class="text-blue-600">V21</span></h1>
+            <h1 class="text-3xl md:text-4xl font-black mb-2 text-slate-800 tracking-tight">台彩全能分析儀</h1>
             <p class="text-slate-500 text-sm">AI 自動同步 • 智能搜尋 • 四大戰術流派</p>
         </header>
 
@@ -105,17 +116,37 @@
                     </div>
                 </div>
 
-                <!-- 搜尋與過濾區 (新功能) -->
+                <!-- 搜尋與過濾區 (修改為下拉式) -->
                 <div class="bg-slate-700/50 rounded-xl p-3 flex flex-col md:flex-row gap-3 items-center">
                     <div class="w-full md:w-auto flex-1 flex items-center gap-2">
                         <span class="text-xl">🔍</span>
-                        <input type="text" id="search-period" placeholder="輸入期數 (例如: 114000088)" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-400 placeholder-slate-500">
+                        <input type="text" id="search-period" placeholder="輸入期數 (如: 114000088)" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-400 placeholder-slate-500 tracking-wide">
                     </div>
                     <div class="w-full md:w-auto flex items-center gap-2">
                         <span class="text-xl">📅</span>
-                        <input type="month" id="search-month" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-400 placeholder-slate-500">
+                        <div class="flex gap-2 w-full">
+                            <select id="search-year" class="custom-select w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-400 cursor-pointer">
+                                <option value="">年份</option>
+                                <!-- JS 動態生成 -->
+                            </select>
+                            <select id="search-month" class="custom-select w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-400 cursor-pointer">
+                                <option value="">月份</option>
+                                <option value="1">1月</option>
+                                <option value="2">2月</option>
+                                <option value="3">3月</option>
+                                <option value="4">4月</option>
+                                <option value="5">5月</option>
+                                <option value="6">6月</option>
+                                <option value="7">7月</option>
+                                <option value="8">8月</option>
+                                <option value="9">9月</option>
+                                <option value="10">10月</option>
+                                <option value="11">11月</option>
+                                <option value="12">12月</option>
+                            </select>
+                        </div>
                     </div>
-                    <button onclick="app.resetFilter()" class="text-xs text-slate-400 hover:text-white underline whitespace-nowrap">重置條件</button>
+                    <button onclick="app.resetFilter()" class="text-xs text-slate-400 hover:text-white underline whitespace-nowrap px-2">重置</button>
                 </div>
             </div>
 
@@ -141,26 +172,26 @@
                 </div>
             </div>
 
-            <!-- 開獎列表 -->
+            <!-- 開獎列表 (字體加大) -->
             <div class="bg-white border-x border-b border-slate-200 p-4 rounded-b-2xl mb-8">
-                <h4 class="font-bold text-slate-700 text-sm mb-3 border-l-4 border-blue-500 pl-3 flex justify-between items-center">
+                <h4 class="font-bold text-slate-700 text-base mb-3 border-l-4 border-blue-500 pl-3 flex justify-between items-center">
                     <span>📅 開獎結果列表</span>
                     <span class="text-xs text-slate-400 font-normal" id="list-info">顯示近 5 期</span>
                 </h4>
-                <div class="overflow-x-auto max-h-60 overflow-y-auto custom-scrollbar">
-                    <table class="w-full text-sm text-left text-slate-600">
-                        <thead class="text-xs text-slate-400 uppercase bg-slate-50 sticky top-0 z-10">
+                <div class="overflow-x-auto max-h-80 overflow-y-auto custom-scrollbar">
+                    <table class="w-full text-left text-slate-600">
+                        <thead class="text-sm text-slate-500 uppercase bg-slate-50 sticky top-0 z-10">
                             <tr>
-                                <th class="px-3 py-2 rounded-l-lg">期別 / 日期</th>
-                                <th class="px-3 py-2 rounded-r-lg">開出號碼</th>
+                                <th class="px-4 py-3 rounded-l-lg font-bold">期別 / 日期</th>
+                                <th class="px-4 py-3 rounded-r-lg font-bold">開出號碼</th>
                             </tr>
                         </thead>
-                        <tbody id="history-list" class="divide-y divide-slate-100">
+                        <tbody id="history-list" class="divide-y divide-slate-100 text-base">
                             <!-- JS 填充 -->
                         </tbody>
                     </table>
                 </div>
-                <div id="no-result-msg" class="hidden text-center py-4 text-slate-400 text-sm">查無符合資料</div>
+                <div id="no-result-msg" class="hidden text-center py-6 text-slate-400 text-sm">查無符合資料</div>
             </div>
         </div>
 
@@ -206,6 +237,7 @@
             </div>
 
             <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
+                <!-- 學派說明區塊 -->
                 <div id="school-description" class="mb-6 text-sm leading-relaxed text-slate-600 bg-slate-50 p-5 rounded-xl border-l-4 border-blue-500"></div>
 
                 <div class="flex flex-col items-center gap-6">
@@ -249,10 +281,72 @@
         };
 
         const schoolInfo = {
-            stat: { color: "border-blue-500", title: "統計學派：冷熱號與回歸平均", desc: "基於大數法則，分析冷熱號碼與遺漏值，尋找機率回補點。" },
-            pattern: { color: "border-purple-500", title: "關聯性學派：拖牌與版路", desc: "分析號碼之間的連動關係（拖牌）與尾數規律。" },
-            balance: { color: "border-green-500", title: "結構平衡學派：聰明包牌", desc: "透過奇偶比、大小比、總和值等結構條件過濾極端組合。" },
-            ai: { color: "border-amber-500", title: "AI 與機器學習派", desc: "模擬類神經網路權重，對近期趨勢給予動態加權。" }
+            stat: { 
+                color: "border-blue-500", 
+                title: "統計學派：冷熱號與回歸平均 (The Statistical School)", 
+                desc: `
+                    <p class="mb-3 font-medium">這是最傳統也最常見的方法。</p>
+                    <p class="font-bold mb-1 text-slate-700">核心邏輯：</p>
+                    <ul class="list-disc pl-5 mb-3 space-y-1">
+                        <li><span class="font-bold text-blue-600">慣性定律（熱號）：</span>認為機器或球組有物理偏差，或者短期內有某種趨勢，所以最近常開的號碼，下一期還會開。</li>
+                        <li><span class="font-bold text-blue-600">回歸平均（冷號）：</span>認為機率最終會公平。如果 05 號已經 100 期沒開了（遠低於理論機率），它就「該還債」了，所以賭它即將開出。</li>
+                    </ul>
+                    <p class="font-bold mb-1 text-slate-700">常見手法：</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>計算每個號碼的歷史出現次數。</li>
+                        <li>計算「遺漏值」（目前已經連續幾期沒開）。</li>
+                    </ul>
+                `
+            },
+            pattern: { 
+                color: "border-purple-500", 
+                title: "關聯性學派：拖牌與版路 (The Association/Pattern School)", 
+                desc: `
+                    <p class="mb-3 font-medium">這是台灣彩迷最喜歡研究的領域，俗稱「看版路」。</p>
+                    <p class="font-bold mb-1 text-slate-700">核心邏輯：</p>
+                    <p class="mb-2">認為號碼之間有隱藏的連結。</p>
+                    <ul class="list-disc pl-5 mb-3 space-y-1">
+                        <li><span class="font-bold text-purple-600">拖牌（Conditional Probability）：</span>如果這一期開了 01，歷史數據顯示下一期特別容易開 25。這在統計上稱為「條件機率」。</li>
+                        <li><span class="font-bold text-purple-600">尾數法則：</span>認為每一期的「尾數」（例如 01, 11, 21, 31 都算 1 尾）有某種規律。</li>
+                        <li><span class="font-bold text-purple-600">連莊與連號：</span>賭上一期的號碼會重複掉下來（連莊），或是號碼會相連（如 12, 13）。</li>
+                    </ul>
+                    <p class="font-bold mb-1 text-slate-700">盲點：</p>
+                    <p>人類大腦很擅長在隨機雜訊中尋找圖形（Pareidolia），很多所謂的「版路」其實只是巧合，但在短期內看起來像是一種規律。</p>
+                `
+            },
+            balance: { 
+                color: "border-green-500", 
+                title: "結構平衡學派：聰明包牌 (The Balancing School)", 
+                desc: `
+                    <p class="mb-3 font-medium">這派不預測「哪個號碼會開」，而是預測「哪種結構機率最高」。</p>
+                    <p class="font-bold mb-1 text-slate-700">核心邏輯：</p>
+                    <ul class="list-disc pl-5 mb-3 space-y-1">
+                        <li><span class="font-bold text-green-600">常態分佈：</span>雖然每個號碼機率一樣，但「組合」的機率不一樣。</li>
+                        <li><span class="font-bold text-green-600">奇偶比：</span>6 個號碼全部是偶數的機率極低。通常會選「3奇3偶」或「4奇2偶」。</li>
+                        <li><span class="font-bold text-green-600">大小比：</span>全部都是小號碼（1-24）或全部大號碼（25-49）的機率很低。</li>
+                        <li><span class="font-bold text-green-600">總和值：</span>6 個號碼加起來的總和，通常會落在一個鐘形曲線的中間區域（例如大樂透約在 120-180 之間）。</li>
+                    </ul>
+                    <p class="font-bold mb-1 text-slate-700">應用：</p>
+                    <p>這通常用於「刪去法」，把那些極端不合理的組合（例如 1,2,3,4,5,6）過濾掉，以節省投注成本。</p>
+                `
+            },
+            ai: { 
+                color: "border-amber-500", 
+                title: "AI 與機器學習派 (The AI/Machine Learning School)", 
+                desc: `
+                    <p class="mb-3 font-medium">這是近年來比較新的嘗試，使用 LSTM（長短期記憶模型）或神經網路。</p>
+                    <p class="font-bold mb-1 text-slate-700">核心邏輯：</p>
+                    <ul class="list-disc pl-5 mb-3 space-y-1">
+                        <li>把彩券開獎當作「時間序列數據」（Time Series Data），就像預測股票或天氣一樣。</li>
+                        <li>丟入幾千期的歷史資料，讓電腦自己去找出人類肉眼看不出來的非線性關係。</li>
+                    </ul>
+                    <p class="font-bold mb-1 text-slate-700">殘酷的現實：</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>股票是有因果關係的（公司賺錢 -> 股價漲），但彩券是「獨立隨機事件」（Independent Random Events）。</li>
+                        <li>AI 在這種純隨機數據上非常容易發生<span class="font-bold text-amber-600">「過度擬合 (Overfitting)」</span>。也就是說，AI 可以完美背下過去的歷史，但對未來的預測能力接近於零，因為過去的雜訊並不能預示未來。</li>
+                    </ul>
+                `
+            }
         };
 
         const App = {
@@ -262,22 +356,39 @@
                 currentGame: "",
                 currentSchool: "stat",
                 filterPeriod: "",
+                filterYear: "",
                 filterMonth: ""
             },
 
             init() {
                 this.updateDescription();
                 this.initFetch();
+                this.populateYearSelect();
                 
                 // 綁定搜尋事件
                 document.getElementById('search-period').addEventListener('input', (e) => {
                     this.state.filterPeriod = e.target.value.trim();
                     this.updateDashboard();
                 });
+                document.getElementById('search-year').addEventListener('change', (e) => {
+                    this.state.filterYear = e.target.value;
+                    this.updateDashboard();
+                });
                 document.getElementById('search-month').addEventListener('change', (e) => {
                     this.state.filterMonth = e.target.value;
                     this.updateDashboard();
                 });
+            },
+
+            populateYearSelect() {
+                const yearSelect = document.getElementById('search-year');
+                // 產生 2021 到 2030 的年份
+                for (let y = 2021; y <= 2030; y++) {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.innerText = `${y}年`;
+                    yearSelect.appendChild(opt);
+                }
             },
 
             async initFetch() {
@@ -350,11 +461,10 @@
                 const sortedGames = availableGames.sort((a, b) => {
                     const idxA = CONFIG.GAMES_ORDER.indexOf(a);
                     const idxB = CONFIG.GAMES_ORDER.indexOf(b);
-                    // 沒在清單裡的排後面，或不顯示(如果想嚴格過濾)
                     return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
                 });
 
-                // 過濾掉不在 CONFIG.GAMES_ORDER 裡的遊戲 (例如雙贏彩)
+                // 過濾掉不在 CONFIG.GAMES_ORDER 裡的遊戲
                 const finalGames = sortedGames.filter(g => CONFIG.GAMES_ORDER.includes(g));
 
                 if (finalGames.length > 0 && !this.state.currentGame) {
@@ -368,7 +478,7 @@
                     btn.innerText = game;
                     btn.onclick = () => {
                         this.state.currentGame = game;
-                        this.resetFilter(); // 切換遊戲時重置搜尋
+                        this.resetFilter(); 
                         document.querySelectorAll('.game-tab').forEach(el => el.classList.remove('active'));
                         btn.classList.add('active');
                         this.updateDashboard();
@@ -379,8 +489,10 @@
 
             resetFilter() {
                 this.state.filterPeriod = "";
+                this.state.filterYear = "";
                 this.state.filterMonth = "";
                 document.getElementById('search-period').value = "";
+                document.getElementById('search-year').value = "";
                 document.getElementById('search-month').value = "";
                 this.updateDashboard();
             },
@@ -393,12 +505,15 @@
                 if (this.state.filterPeriod) {
                     data = data.filter(item => String(item.period).includes(this.state.filterPeriod));
                 }
+                
+                // 年份過濾
+                if (this.state.filterYear) {
+                    data = data.filter(item => item.date.getFullYear() === parseInt(this.state.filterYear));
+                }
+
+                // 月份過濾
                 if (this.state.filterMonth) {
-                    const [y, m] = this.state.filterMonth.split('-');
-                    data = data.filter(item => 
-                        item.date.getFullYear() === parseInt(y) && 
-                        (item.date.getMonth() + 1) === parseInt(m)
-                    );
+                    data = data.filter(item => (item.date.getMonth() + 1) === parseInt(this.state.filterMonth));
                 }
 
                 document.getElementById('current-game-title').innerText = this.state.currentGame;
@@ -414,25 +529,25 @@
                     const firstDate = data[data.length-1].date.toLocaleDateString();
                     document.getElementById('date-range').innerText = `${firstDate} ~ ${lastDate}`;
                     
-                    // 統計顯示 (僅顯示前5筆資料的統計，還是整體？通常 Dashboard 顯示整體較好)
-                    // 這裡讓統計圖表跟隨過濾結果
-                    this.renderHotStats('stat-year', data); // 暫用全部資料
-                    this.renderHotStats('stat-month', data.slice(0, 30)); // 近30期
+                    // 統計顯示 (使用過濾後的資料)
+                    this.renderHotStats('stat-year', data); 
+                    this.renderHotStats('stat-month', data.slice(0, 30)); 
                     this.renderHotStats('stat-recent', data.slice(0, 10));
 
-                    // 頭獎
+                    // 頭獎顯示
                     const jackpotEl = document.getElementById('jackpot-container');
                     const amountEl = document.getElementById('jackpot-amount');
-                    if (this.state.rawJackpots[this.state.currentGame] && !this.state.filterPeriod && !this.state.filterMonth) {
+                    if (this.state.rawJackpots[this.state.currentGame] && !this.state.filterPeriod && !this.state.filterYear && !this.state.filterMonth) {
                         jackpotEl.classList.remove('hidden');
                         amountEl.innerText = `$${this.state.rawJackpots[this.state.currentGame]}`;
                     } else {
                         jackpotEl.classList.add('hidden');
                     }
 
-                    // 列表顯示 (過濾後全部顯示，最多100筆以免卡頓)
-                    listInfo.innerText = this.state.filterPeriod || this.state.filterMonth ? `搜尋結果: ${data.length} 筆` : "顯示近 5 期";
-                    this.renderHistoryList(this.state.filterPeriod || this.state.filterMonth ? data.slice(0, 100) : data.slice(0, 5));
+                    // 列表顯示
+                    const isFiltering = this.state.filterPeriod || this.state.filterYear || this.state.filterMonth;
+                    listInfo.innerText = isFiltering ? `搜尋結果: ${data.length} 筆` : "顯示近 5 期";
+                    this.renderHistoryList(isFiltering ? data : data.slice(0, 5));
                 } else {
                     noResult.classList.remove('hidden');
                     this.renderHistoryList([]);
@@ -448,21 +563,23 @@
                 
                 data.forEach(item => {
                     const tr = document.createElement('tr');
-                    let numsHtml = item.numbers.slice(0, 6).map(n => `<span class="ball-sm inline-flex items-center justify-center rounded-full font-bold mr-1">${n}</span>`).join('');
+                    
+                    // 處理號碼球 (大字體)
+                    let numsHtml = item.numbers.slice(0, 6).map(n => `<span class="ball-sm inline-flex items-center justify-center rounded-full font-black mr-2">${n}</span>`).join('');
                     
                     if (['大樂透', '威力彩'].includes(this.state.currentGame) && item.numbers.length > 6) {
                         const special = item.numbers[item.numbers.length - 1];
                         const normal = item.numbers.slice(0, item.numbers.length - 1);
-                        numsHtml = normal.map(n => `<span class="ball-sm inline-flex items-center justify-center rounded-full font-bold mr-1">${n}</span>`).join('');
-                        numsHtml += `<span class="ball-sm ball-special inline-flex items-center justify-center rounded-full font-bold ml-1">${special}</span>`;
+                        numsHtml = normal.map(n => `<span class="ball-sm inline-flex items-center justify-center rounded-full font-black mr-2">${n}</span>`).join('');
+                        numsHtml += `<span class="ball-sm ball-special inline-flex items-center justify-center rounded-full font-black ml-1">${special}</span>`;
                     }
 
                     tr.innerHTML = `
-                        <td class="px-3 py-3 font-medium text-slate-900 whitespace-nowrap border-b border-slate-50">
-                            <div class="text-xs text-slate-400">${item.date.toLocaleDateString()}</div>
-                            <div class="font-bold text-blue-600">第 ${item.period} 期</div>
+                        <td class="px-4 py-4 font-bold text-slate-800 whitespace-nowrap border-b border-slate-50">
+                            <div class="text-sm text-slate-400 mb-1 font-normal">${item.date.toLocaleDateString()}</div>
+                            <div class="text-lg text-blue-600">第 ${item.period} 期</div>
                         </td>
-                        <td class="px-3 py-3 border-b border-slate-50">
+                        <td class="px-4 py-4 border-b border-slate-50">
                             <div class="flex flex-wrap gap-1">${numsHtml}</div>
                         </td>
                     `;
@@ -506,8 +623,8 @@
             updateDescription() {
                 const info = schoolInfo[this.state.currentSchool];
                 const container = document.getElementById('school-description');
-                container.className = `mb-6 text-sm leading-relaxed text-slate-600 bg-slate-50 p-5 rounded-xl border-l-4 ${info.color}`;
-                container.innerHTML = `<h4 class="text-lg font-bold mb-2 text-slate-800">${info.title}</h4><p>${info.desc}</p>`;
+                container.className = `mb-6 text-sm leading-relaxed text-slate-600 bg-slate-50 p-6 rounded-xl border-l-4 ${info.color}`;
+                container.innerHTML = `<h4 class="text-xl font-bold mb-4 text-slate-800 border-b border-slate-200 pb-2">${info.title}</h4>${info.desc}`;
             },
 
             runPrediction() {
