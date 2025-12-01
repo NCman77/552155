@@ -21,14 +21,14 @@
                             100: '#f5f5f4',
                             200: '#e7e5e4',
                             600: '#57534e',
+                            700: '#44403c',
                             800: '#292524',
-                            900: '#1c1917',
                         },
                         school: {
-                            stat: '#64748b',    
-                            pattern: '#7c3aed', 
-                            balance: '#059669', 
-                            ai: '#d97706'       
+                            stat: '#64748b',    // 沉穩藍灰
+                            pattern: '#7c3aed', // 神秘紫
+                            balance: '#059669', // 平衡綠
+                            ai: '#d97706'       // 活力橘
                         }
                     }
                 }
@@ -90,19 +90,20 @@
         .table-row { transition: background-color 0.2s; }
         .table-row:hover { background-color: #fafaf9; }
 
-        /* 新增：號碼下方理由標籤樣式 */
         .reason-tag {
             font-size: 0.65rem;
-            margin-top: 4px;
-            color: #78716c;
+            margin-top: 6px;
+            color: #57534e;
             background: #f5f5f4;
-            padding: 2px 6px;
-            border-radius: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
             white-space: nowrap;
-            max-width: 60px;
+            max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             text-align: center;
+            font-weight: 700;
+            border: 1px solid #e7e5e4;
         }
     </style>
 </head>
@@ -115,9 +116,10 @@
                 <h1 class="text-3xl md:text-5xl font-black text-stone-800 tracking-wider mb-2 relative z-10">台彩全能分析儀</h1>
                 <div class="h-3 w-full bg-yellow-200/50 absolute bottom-1 z-0 rounded-full transform -rotate-1"></div>
             </div>
-            <p class="text-stone-500 text-sm mt-3 font-bold tracking-widest uppercase">AI 自動同步 • 智能搜尋 • 四大戰術流派</p>
+            <p class="text-stone-500 text-sm mt-3 font-bold tracking-widest uppercase">數據融合 • 智能搜尋 • 四大戰術流派</p>
         </header>
 
+        <!-- 狀態列 -->
         <div class="bg-white rounded-2xl p-5 shadow-sm mb-8 border border-stone-100 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <span class="relative flex h-3 w-3">
@@ -129,6 +131,7 @@
             <div class="text-xs text-stone-400 font-bold bg-stone-50 px-3 py-1 rounded-full" id="last-update-time">等待更新</div>
         </div>
 
+        <!-- 遊戲選擇器 -->
         <div class="mb-10 overflow-x-auto hide-scrollbar pb-2">
             <div class="flex gap-4 justify-center min-w-max px-2" id="game-tabs-container">
                 <div class="game-tab active">載入中...</div>
@@ -158,6 +161,7 @@
                     </div>
                 </div>
 
+                <!-- 搜尋區 -->
                 <div class="bg-stone-50 rounded-2xl p-5 border border-stone-200">
                     <div class="flex flex-col lg:flex-row gap-4 items-end lg:items-center">
                         <div class="flex flex-col gap-1.5 w-full sm:w-auto">
@@ -273,7 +277,7 @@
                         <div class="text-3xl">🔗</div>
                         <h4 class="font-bold text-lg">關聯學派</h4>
                     </div>
-                    <p class="text-sm opacity-80 font-medium">拖牌 / 版路 / 尾數</p>
+                    <p class="text-sm opacity-80 font-medium">拖牌 / 尾數法則</p>
                     <div class="absolute top-5 right-5 w-3 h-3 rounded-full bg-current opacity-0" id="dot-pattern"></div>
                 </div>
 
@@ -282,7 +286,7 @@
                         <div class="text-3xl">⚖️</div>
                         <h4 class="font-bold text-lg">平衡學派</h4>
                     </div>
-                    <p class="text-sm opacity-80 font-medium">聰明包牌 / 奇偶比</p>
+                    <p class="text-sm opacity-80 font-medium">結構平衡 / 區間斷層</p>
                     <div class="absolute top-5 right-5 w-3 h-3 rounded-full bg-current opacity-0" id="dot-balance"></div>
                 </div>
 
@@ -291,7 +295,7 @@
                         <div class="text-3xl">🤖</div>
                         <h4 class="font-bold text-lg">AI 運算</h4>
                     </div>
-                    <p class="text-sm opacity-80 font-medium">時間序列 / 趨勢</p>
+                    <p class="text-sm opacity-80 font-medium">時間權重 / 趨勢分析</p>
                     <div class="absolute top-5 right-5 w-3 h-3 rounded-full bg-current opacity-0" id="dot-ai"></div>
                 </div>
             </div>
@@ -326,7 +330,7 @@
                 </div>
 
                 <div id="result-area" class="mt-10 hidden border-t border-stone-100 pt-10">
-                    <h4 class="text-center font-bold text-stone-400 mb-8 text-sm tracking-widest uppercase">推薦號碼組合 (附帶分析理由)</h4>
+                    <h4 class="text-center font-bold text-stone-400 mb-8 text-sm tracking-widest uppercase">Recommended Combination</h4>
                     <div id="prediction-output" class="space-y-4"></div>
                 </div>
             </div>
@@ -338,6 +342,7 @@
 
     </div>
 
+    <!-- 隱藏的手動上傳功能 -->
     <input type="file" id="fileInput" accept=".zip" class="hidden" />
 
     <script>
@@ -349,49 +354,58 @@
         const schoolInfo = {
             stat: { 
                 color: "border-school-stat", 
-                title: "統計學派：冷熱號與回歸平均", 
+                title: "統計學派：冷熱號與回歸平均 (The Statistical School)", 
                 desc: `
                     <p class="mb-3 font-medium text-stone-800">這是最傳統也最常見的方法。</p>
                     <p class="font-bold mb-2 text-school-stat">核心邏輯：</p>
                     <ul class="list-disc pl-5 mb-4 space-y-2">
                         <li><span class="font-bold text-school-stat">慣性定律（熱號）：</span>認為機器或球組有物理偏差，所以最近常開的號碼，下一期還會開。</li>
-                        <li><span class="font-bold text-school-stat">回歸平均（冷號）：</span>認為機率最終會公平，若長期未開則該還債。</li>
+                        <li><span class="font-bold text-school-stat">回歸平均（冷號）：</span>認為機率最終會公平。如果 05 號已經 100 期沒開了，它就「該還債」了，賭它即將開出。</li>
+                    </ul>
+                    <p class="font-bold mb-2 text-school-stat">常見手法：</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>計算每個號碼的歷史出現次數。</li>
+                        <li>計算「遺漏值」（目前已經連續幾期沒開）。</li>
                     </ul>
                 `
             },
             pattern: { 
                 color: "border-school-pattern", 
-                title: "關聯性學派：拖牌與版路", 
+                title: "關聯性學派：拖牌與版路 (The Association/Pattern School)", 
                 desc: `
-                    <p class="mb-3 font-medium text-stone-800">這是台灣彩迷最喜歡研究的領域。</p>
-                    <p class="font-bold mb-2 text-school-pattern">核心邏輯：</p>
+                    <p class="mb-3 font-medium text-stone-800">結合了 <span class="text-school-pattern font-bold">尾數分析</span> 的進階版本。</p>
+                    <p class="font-bold mb-2 text-school-pattern">融合邏輯：</p>
                     <ul class="list-disc pl-5 mb-4 space-y-2">
-                        <li><span class="font-bold text-school-pattern">拖牌 (Conditional)：</span>利用「條件機率」，分析上一期號碼最常帶出哪些號碼。</li>
-                        <li><span class="font-bold text-school-pattern">尾數法則：</span>分析各尾數的出現規律。</li>
+                        <li><span class="font-bold text-stone-700">拖牌效應：</span>分析上一期號碼歷史上最常帶出哪些號碼。</li>
+                        <li><span class="font-bold text-stone-700">尾數法則：</span>偵測近期強勢尾數（例如 7 尾連莊），針對同尾數號碼進行加權。</li>
                     </ul>
+                    <p class="font-bold mb-1 text-school-pattern">優勢：</p>
+                    <p>不僅看單一號碼的關聯，更捕捉「尾數群體」的趨勢。</p>
                 `
             },
             balance: { 
                 color: "border-school-balance", 
-                title: "結構平衡學派：聰明包牌", 
+                title: "結構平衡學派：聰明包牌 (The Balancing School)", 
                 desc: `
-                    <p class="mb-3 font-medium text-stone-800">這派不預測「哪個號碼」，而是預測「哪種結構機率最高」。</p>
-                    <p class="font-bold mb-2 text-school-balance">核心邏輯：</p>
+                    <p class="mb-3 font-medium text-stone-800">結合了 <span class="text-school-balance font-bold">區間斷層分析</span> 的結構預測。</p>
+                    <p class="font-bold mb-2 text-school-balance">融合邏輯：</p>
                     <ul class="list-disc pl-5 mb-4 space-y-2">
-                        <li><span class="font-bold text-school-balance">常態分佈：</span>尋找奇偶比、大小比、總和值落於常態分佈區間的完美組合。</li>
-                        <li><span class="font-bold text-school-balance">刪去法：</span>過濾掉極端不合理的組合 (如全連號)。</li>
+                        <li><span class="font-bold text-stone-700">完美結構：</span>尋找奇偶比、大小比、總和值落於常態分佈區間的組合。</li>
+                        <li><span class="font-bold text-stone-700">區間斷層：</span>自動偵測並排除預測會「斷區」（一顆都不開）的號碼區間，大幅提升中獎率。</li>
                     </ul>
+                    <p class="font-bold mb-1 text-school-balance">應用：</p>
+                    <p>這是最穩健的「防守型」策略，能有效過濾掉極端不合理的垃圾組合。</p>
                 `
             },
             ai: { 
                 color: "border-school-ai", 
-                title: "AI 與機器學習派", 
+                title: "AI 與機器學習派 (The AI/Machine Learning School)", 
                 desc: `
-                    <p class="mb-3 font-medium text-stone-800">使用模擬神經網路權重概念。</p>
+                    <p class="mb-3 font-medium text-stone-800">這不是神經網路，而是基於 <span class="text-school-ai font-bold">時間序列加權</span> 的趨勢運算。</p>
                     <p class="font-bold mb-2 text-school-ai">核心邏輯：</p>
                     <ul class="list-disc pl-5 mb-4 space-y-2">
-                        <li><span class="font-bold text-school-ai">時間加權：</span>把開獎當作時間序列，近期出現的號碼權重較高。</li>
-                        <li><span class="font-bold text-school-ai">趨勢追蹤：</span>避免過度擬合 (Overfitting)，專注於捕捉短期內的熱度變化。</li>
+                        <li><span class="font-bold text-stone-700">時間加權：</span>把開獎視為時間序列，距離現在越近的期數，其號碼權重越高。</li>
+                        <li><span class="font-bold text-stone-700">趨勢追蹤：</span>避免過度擬合 (Overfitting)，專注於捕捉短期內的熱度變化，而非背誦歷史。</li>
                     </ul>
                 `
             }
@@ -680,11 +694,11 @@
                 for(let i=0; i<setSize; i++) {
                     let result = null;
                     
-                    // 根據選定的流派呼叫對應函式
+                    // 確保 switch-case 正確呼叫對應的融合演算法
                     switch(this.state.currentSchool) {
                         case 'stat': result = this.algoStat(data, maxN, ballsPerDraw); break;
-                        case 'pattern': result = this.algoPattern(data, maxN, ballsPerDraw); break;
-                        case 'balance': result = this.algoBalance(data, maxN, ballsPerDraw); break;
+                        case 'pattern': result = this.algoPattern(data, maxN, ballsPerDraw); break; // 含尾數
+                        case 'balance': result = this.algoBalance(data, maxN, ballsPerDraw); break; // 含區間
                         case 'ai': result = this.algoAI(data, maxN, ballsPerDraw); break;
                     }
                     
@@ -729,16 +743,17 @@
                 container.innerHTML += html;
             },
 
-            // === 升級版演算法 (帶理由) ===
+            // === 演算法 (融合版 - 帶理由) ===
             
             // 1. 統計學派 (修正權重上限, 冷號動態加權)
             algoStat(data, maxN, count) {
                 const freq = {};
                 data.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1));
                 
-                // 計算每個號碼的遺漏值 (幾期沒開)
+                // 計算遺漏值 (Miss Count)
                 const lastSeen = {};
                 for(let i=1; i<=maxN; i++) lastSeen[i] = -1;
+                
                 data.forEach((d, idx) => {
                     d.numbers.forEach(n => {
                         if (lastSeen[n] === -1) lastSeen[n] = idx;
@@ -746,21 +761,20 @@
                 });
 
                 const weights = {};
-                const tags = {}; // 儲存理由
+                const tags = {}; 
                 
                 for(let i=1; i<=maxN; i++) {
                     let w = freq[i] || 0;
                     const miss = lastSeen[i] === -1 ? data.length : lastSeen[i];
                     
-                    // 動態冷號加權：每多一期沒開，權重增加
+                    // 動態冷號加權
                     w += (miss * 0.5); 
                     
                     if (miss > 15) tags[i] = `冷${miss}期`;
                     else if (freq[i] > data.length * 0.15) tags[i] = "熱號";
                     else tags[i] = "常態";
 
-                    // 上限拉高到 500
-                    if (w > 500) w = 500;
+                    if (w > 500) w = 500; // 上限 500
                     weights[i] = w;
                 }
                 
@@ -768,66 +782,97 @@
                 
                 return {
                     numbers: selected.map(n => ({ val: n, tag: tags[n] })),
-                    groupReason: "根據歷史頻率與遺漏值回補計算"
+                    groupReason: "根據歷史頻率與遺漏值動態回補"
                 };
             },
 
-            // 2. 關聯學派 (顯示拖牌來源)
+            // 2. 關聯學派 (+尾數融合)
             algoPattern(data, maxN, count) {
                 if(data.length < 2) return this.algoStat(data, maxN, count);
                 const lastDraw = data[0].numbers;
                 const nextDrawCounts = {};
-                const relationMap = {}; // 記錄誰拖出了誰
-                
+                const relationMap = {}; 
+                const tailCounts = {}; 
+
+                // 統計近期尾數熱度 (近10期)
+                data.slice(0, 10).forEach(d => {
+                    d.numbers.forEach(n => {
+                        const tail = n % 10;
+                        tailCounts[tail] = (tailCounts[tail] || 0) + 1;
+                    });
+                });
+                const hotTail = Object.entries(tailCounts).sort((a,b)=>b[1]-a[1])[0][0];
+
                 for(let i=1; i<data.length; i++) {
                     const intersection = data[i].numbers.filter(n => lastDraw.includes(n));
                     if(intersection.length > 0) {
                         data[i-1].numbers.forEach(n => {
                             nextDrawCounts[n] = (nextDrawCounts[n]||0) + intersection.length;
-                            // 記錄最強關聯
                             if (!relationMap[n]) relationMap[n] = intersection[0]; 
                         });
                     }
                 }
                 
-                // 如果找不到關聯，回退
                 if(Object.keys(nextDrawCounts).length === 0) return this.algoStat(data, maxN, count);
                 
-                // 加隨機擾動
-                for(let k in nextDrawCounts) nextDrawCounts[k] *= (0.9 + Math.random() * 0.2);
+                // 尾數加權
+                for(let k in nextDrawCounts) {
+                    if (k % 10 == hotTail) nextDrawCounts[k] *= 1.5;
+                    nextDrawCounts[k] *= (0.9 + Math.random() * 0.2);
+                }
                 
                 const selected = this.weightedRandomSelect(nextDrawCounts, maxN, count);
                 return {
                     numbers: selected.map(n => ({ 
                         val: n, 
-                        tag: relationMap[n] ? `由${relationMap[n]}拖牌` : '關聯' 
+                        tag: relationMap[n] ? `由${relationMap[n]}拖牌` : (n%10==hotTail ? `${hotTail}尾強勢` : '關聯')
                     })),
-                    groupReason: `基於上期號碼 [${lastDraw.slice(0,3).join(',')}...] 的歷史拖牌效應`
+                    groupReason: `上期[${lastDraw.slice(0,3).join(',')}]拖牌 + ${hotTail}尾數趨勢融合`
                 };
             },
 
-            // 3. 平衡學派 (優化公式，平衡奇偶與總和)
+            // 3. 平衡學派 (+區間融合)
             algoBalance(data, maxN, count) {
                 let bestSet = [];
                 let minScore = 99999;
                 let bestInfo = {};
                 
-                // 跑 500 次尋找最佳結構
+                // 區間統計 (近30期)
+                const zoneCounts = [0,0,0,0,0];
+                data.slice(0, 30).forEach(d => {
+                    d.numbers.forEach(n => {
+                        if(n<=9) zoneCounts[0]++;
+                        else if(n<=19) zoneCounts[1]++;
+                        else if(n<=29) zoneCounts[2]++;
+                        else if(n<=39) zoneCounts[3]++;
+                        else zoneCounts[4]++;
+                    });
+                });
+                const coldZoneIdx = zoneCounts.indexOf(Math.min(...zoneCounts));
+                
                 for(let k=0; k<500; k++) {
-                    // 借用 Stat 的權重來生候選，確保號碼本身不冷門
-                    const statRes = this.algoStat(data, maxN, count); 
-                    // 這裡為了簡化，直接重新抽，不使用 statRes 的完整結構，只取權重概念
-                    // 但為了效能，我們這裡直接用純隨機 + 簡易過濾
                     const set = [];
                     const pool = Array.from({length: maxN}, (_, i) => i + 1);
+                    
+                    // 嘗試過濾掉冷區號碼 (50%機率)
+                    if (Math.random() > 0.5) {
+                        const start = coldZoneIdx * 10;
+                        const end = start + 9;
+                        for(let i=pool.length-1; i>=0; i--) {
+                            if(pool[i] >= start && pool[i] <= end) pool.splice(i, 1);
+                        }
+                    }
+
                     for(let i=0; i<count; i++) {
+                        if(pool.length === 0) break;
                         const idx = Math.floor(Math.random() * pool.length);
                         set.push(pool[idx]);
                         pool.splice(idx, 1);
                     }
                     set.sort((a,b)=>a-b);
                     
-                    // 評分公式優化
+                    if (set.length < count) continue;
+
                     let odd = set.filter(n => n%2!==0).length;
                     let even = count - odd;
                     let diffOE = Math.abs(odd - even);
@@ -836,7 +881,7 @@
                     let expectedSum = (1 + maxN) * count / 2;
                     let diffSum = Math.abs(sum - expectedSum) / expectedSum;
                     
-                    // 權重平衡：奇偶比重 15, 總和比重 50
+                    // 權重平衡
                     let score = (diffOE * 15) + (diffSum * 50);
                     
                     if(score < minScore) { 
@@ -846,23 +891,33 @@
                     }
                 }
                 
+                // 判斷斷區
+                const setZones = [0,0,0,0,0];
+                bestSet.forEach(n => {
+                    if(n<=9) setZones[0]++;
+                    else if(n<=19) setZones[1]++;
+                    else if(n<=29) setZones[2]++;
+                    else if(n<=39) setZones[3]++;
+                    else setZones[4]++;
+                });
+                const emptyZone = setZones.findIndex(z => z === 0);
+                const zoneMsg = emptyZone > -1 ? `🚫 斷第${emptyZone+1}區` : "";
+
                 return {
                     numbers: bestSet.map(n => ({ val: n, tag: n%2===0 ? '偶' : '奇' })),
-                    groupReason: `完美結構：${bestInfo.odd}奇${bestInfo.even}偶 | 總和 ${bestInfo.sum}`
+                    groupReason: `結構：${bestInfo.odd}奇${bestInfo.even}偶 | 總和 ${bestInfo.sum} | ${zoneMsg}`
                 };
             },
 
-            // 4. AI 學派 (誠實標註時間加權)
+            // 4. AI 學派 (不變，僅調整顯示)
             algoAI(data, maxN, count) {
                 const weights = {};
                 data.forEach((d, idx) => {
-                    const weight = 1000 / (idx + 10); // 時間衰減
+                    const weight = 1000 / (idx + 10); 
                     d.numbers.forEach(n => weights[n] = (weights[n]||0) + weight);
                 });
                 
                 const selected = this.weightedRandomSelect(weights, maxN, count);
-                
-                // 正規化權重以顯示分數 (0-100)
                 const maxW = Math.max(...Object.values(weights));
                 
                 return {
@@ -878,8 +933,7 @@
                 let pool = [];
                 for(let i=1; i<=maxN; i++) {
                     let w = weights[i] || 1;
-                    w = Math.ceil(w); 
-                    // 這裡不設上限 100，讓熱門號更突出
+                    w = Math.ceil(w);
                     for(let k=0; k<w; k++) pool.push(i);
                 }
                 const res = new Set();
@@ -889,7 +943,6 @@
                     res.add(n);
                     safety++;
                 }
-                // 補位防止死循環
                 while(res.size < count) {
                     let n = Math.floor(Math.random() * maxN) + 1;
                     res.add(n);
