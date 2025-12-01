@@ -47,8 +47,8 @@
         .ball-sm { width: 36px; height: 36px; font-size: 16px; border-radius: 50%; background: #fff; color: #57534e; border: 1px solid #d6d3d1; box-shadow: 1px 2px 4px rgba(0,0,0,0.05); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 6px; }
         .ball-special { border-color: #f43f5e; color: #f43f5e; background: #fff1f2; }
         .stat-box { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); border: 1px solid #f0ebe4; }
-        .game-tab { white-space: nowrap; padding: 12px 24px; border-radius: 12px; font-weight: 700; transition: all 0.3s; color: #78716c; background: #e7e5e4; cursor: pointer; font-size: 1rem; border: 2px solid transparent; }
-        .game-tab.active { background: #44403c; color: #f5f5f4; box-shadow: 0 4px 10px rgba(60, 60, 60, 0.2); transform: scale(1.02); }
+        .game-tab { white-space: nowrap; padding: 8px 16px; border-radius: 99px; font-weight: 900; transition: all 0.3s; color: #64748b; background: #e2e8f0; cursor: pointer; font-size: 0.9rem; }
+        .game-tab.active { background: #1e293b; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .custom-input { background-color: #f5f5f4; border: 2px solid #e7e5e4; color: #44403c; transition: all 0.2s; }
         .custom-input:focus { background-color: #fff; border-color: #a8a29e; outline: none; box-shadow: 0 0 0 3px rgba(168, 162, 158, 0.2); }
@@ -83,24 +83,16 @@
             </div>
         </div>
 
-        <!-- 舊狀態列已移除 -->
-
-        <!-- 遊戲選擇器 -->
-        <div class="mb-6 overflow-x-auto hide-scrollbar pb-2">
-            <div class="flex gap-4 justify-center min-w-max px-2" id="game-tabs-container">
-                <div class="game-tab active">載入中...</div>
-            </div>
-        </div>
-
-        <!-- 儀表板區域 (預設隱藏，但JS會開啟) -->
+        <!-- 儀表板區域 -->
         <div id="dashboard-area" class="hidden animate-[fadeIn_0.6s_ease-out]">
             
-            <!-- 整合資訊卡片 -->
-            <div class="bg-white rounded-3xl p-6 shadow-md border border-stone-100 mb-8 relative overflow-hidden">
+            <!-- 整合資訊卡片 (包含遊戲選擇與狀態) -->
+            <div class="bg-white rounded-3xl p-6 shadow-md border border-stone-100 mb-4 relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-2 h-full bg-stone-800"></div>
                 
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8 pl-4">
-                    <div class="flex flex-col gap-1">
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pl-4">
+                    <!-- 左側：標題與頭獎 -->
+                    <div class="flex flex-col gap-1 min-w-[200px]">
                         <div class="flex items-center gap-3">
                             <span class="text-3xl">🎯</span>
                             <span class="text-2xl font-black text-stone-800 tracking-tight" id="current-game-title">大樂透</span>
@@ -111,9 +103,16 @@
                             <span class="text-2xl font-black text-yellow-600 font-sans tracking-tight" id="jackpot-amount">$ --</span>
                         </div>
                     </div>
+
+                    <!-- 中間：遊戲選擇器 (移至此處) -->
+                    <div class="flex-1 w-full overflow-x-auto hide-scrollbar py-2">
+                         <div class="flex gap-2 justify-start lg:justify-center min-w-max px-2" id="game-tabs-container">
+                            <div class="game-tab active">載入中...</div>
+                        </div>
+                    </div>
                     
-                    <!-- 整合後的狀態資訊區 (System Status) -->
-                    <div class="text-sm text-stone-500 text-right font-medium bg-stone-50 px-5 py-3 rounded-xl border border-stone-100">
+                    <!-- 右側：狀態資訊區 -->
+                    <div class="text-sm text-stone-500 text-right font-medium bg-stone-50 px-5 py-3 rounded-xl border border-stone-100 min-w-[180px]">
                         <div class="mb-1 flex items-center justify-end gap-2">
                             <span id="system-status-icon" class="w-2 h-2 rounded-full bg-stone-300"></span>
                             <span id="system-status-text">系統連線中...</span>
@@ -123,52 +122,52 @@
                         <div class="text-[10px] text-stone-300 uppercase font-bold" id="last-update-time">WAITING UPDATE</div>
                     </div>
                 </div>
+            </div>
 
-                <!-- 搜尋與過濾區 -->
-                <div class="bg-stone-50 rounded-2xl p-5 border border-stone-200">
-                    <div class="flex flex-col lg:flex-row gap-4 items-end lg:items-center">
-                        <div class="flex flex-col gap-1.5 w-full sm:w-auto">
-                            <label class="text-xs font-bold text-stone-400 ml-1">期數查詢</label>
-                            <div class="relative w-full sm:w-48"> 
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">#</span>
-                                <input type="text" id="search-period" placeholder="輸入期號" class="custom-input w-full rounded-xl pl-8 pr-4 py-3 text-base font-bold placeholder-stone-400">
-                            </div>
+            <!-- 搜尋與過濾區 (縮減間距) -->
+            <div class="bg-stone-50 rounded-2xl p-4 border border-stone-200 mb-8">
+                <div class="flex flex-col lg:flex-row gap-4 items-end lg:items-center">
+                    <div class="flex flex-col gap-1.5 w-full sm:w-auto">
+                        <label class="text-xs font-bold text-stone-400 ml-1">期數查詢</label>
+                        <div class="relative w-full sm:w-48"> 
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">#</span>
+                            <input type="text" id="search-period" placeholder="輸入期號" class="custom-input w-full rounded-xl pl-8 pr-4 py-2 text-base font-bold placeholder-stone-400">
                         </div>
-                        <div class="flex flex-col gap-1.5 w-full sm:w-auto flex-1">
-                            <label class="text-xs font-bold text-stone-400 ml-1">日期篩選</label>
-                            <div class="flex gap-3">
-                                <div class="relative w-full sm:w-1/2">
-                                    <select id="search-year" class="custom-input custom-select w-full rounded-xl px-4 py-3 text-base font-bold cursor-pointer appearance-none">
-                                        <option value="">選擇年份</option>
-                                    </select>
-                                </div>
-                                <div class="relative w-full sm:w-1/2">
-                                    <select id="search-month" class="custom-input custom-select w-full rounded-xl px-4 py-3 text-base font-bold cursor-pointer appearance-none">
-                                        <option value="">選擇月份</option>
-                                        <option value="1">1 月</option>
-                                        <option value="2">2 月</option>
-                                        <option value="3">3 月</option>
-                                        <option value="4">4 月</option>
-                                        <option value="5">5 月</option>
-                                        <option value="6">6 月</option>
-                                        <option value="7">7 月</option>
-                                        <option value="8">8 月</option>
-                                        <option value="9">9 月</option>
-                                        <option value="10">10 月</option>
-                                        <option value="11">11 月</option>
-                                        <option value="12">12 月</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <button onclick="app.resetFilter()" class="text-sm font-bold text-stone-400 hover:text-stone-600 underline whitespace-nowrap px-4 py-3 h-full flex items-center">
-                            清除重置
-                        </button>
                     </div>
+                    <div class="flex flex-col gap-1.5 w-full sm:w-auto flex-1">
+                        <label class="text-xs font-bold text-stone-400 ml-1">日期篩選</label>
+                        <div class="flex gap-3">
+                            <div class="relative w-full sm:w-1/2">
+                                <select id="search-year" class="custom-input custom-select w-full rounded-xl px-4 py-2 text-base font-bold cursor-pointer appearance-none">
+                                    <option value="">選擇年份</option>
+                                </select>
+                            </div>
+                            <div class="relative w-full sm:w-1/2">
+                                <select id="search-month" class="custom-input custom-select w-full rounded-xl px-4 py-2 text-base font-bold cursor-pointer appearance-none">
+                                    <option value="">選擇月份</option>
+                                    <option value="1">1 月</option>
+                                    <option value="2">2 月</option>
+                                    <option value="3">3 月</option>
+                                    <option value="4">4 月</option>
+                                    <option value="5">5 月</option>
+                                    <option value="6">6 月</option>
+                                    <option value="7">7 月</option>
+                                    <option value="8">8 月</option>
+                                    <option value="9">9 月</option>
+                                    <option value="10">10 月</option>
+                                    <option value="11">11 月</option>
+                                    <option value="12">12 月</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="app.resetFilter()" class="text-sm font-bold text-stone-400 hover:text-stone-600 underline whitespace-nowrap px-4 py-2 h-full flex items-center">
+                        清除重置
+                    </button>
                 </div>
             </div>
 
-            <!-- 統計方塊 (保留在上方) -->
+            <!-- 統計方塊 -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="stat-box">
                     <h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">🔥 年度熱門 <span class="text-stone-300" id="year-label">Year</span></h4>
@@ -184,9 +183,32 @@
                 </div>
             </div>
 
-        </div> <!-- End Dashboard Top -->
+            <!-- 歷史列表 (移至此處並預設收合) -->
+            <div class="bg-white rounded-3xl shadow-md border border-stone-100 overflow-hidden mb-8 animate-[fadeIn_1s_ease-out]">
+                <div class="bg-stone-50 px-6 py-4 border-b border-stone-200 flex justify-between items-center cursor-pointer hover:bg-stone-100 transition" onclick="app.toggleHistory()">
+                    <h4 class="font-black text-stone-700 text-lg flex items-center gap-2"><span>📅 歷史開獎記錄</span></h4>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-stone-400 bg-white px-3 py-1 rounded-lg border border-stone-200 shadow-sm" id="list-info">顯示近 5 期</span>
+                        <span id="history-arrow" class="text-stone-400 text-xl transition-transform transform rotate-0">▼</span>
+                    </div>
+                </div>
+                <!-- 預設隱藏 (max-h-0) -->
+                <div id="history-container" class="max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                    <div class="overflow-x-auto p-2">
+                        <table class="w-full text-left">
+                            <thead class="text-sm font-bold text-stone-400 uppercase">
+                                <tr><th class="px-6 py-4 rounded-xl bg-white sticky top-0 z-10 w-48">期別資訊</th><th class="px-6 py-4 rounded-xl bg-white sticky top-0 z-10">開出號碼</th></tr>
+                            </thead>
+                            <tbody id="history-list" class="divide-y divide-stone-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="no-result-msg" class="hidden text-center py-12 text-stone-400 font-bold">沒有符合資料</div>
+                </div>
+            </div>
 
-        <!-- 戰術流派選擇 (對調至中間) -->
+        </div> <!-- End Dashboard -->
+
+        <!-- 戰術流派選擇 -->
         <div id="strategy-area" class="hidden animate-[fadeIn_0.8s_ease-out]">
             <div class="flex items-center gap-4 mb-6">
                 <div class="h-px bg-stone-300 flex-1"></div>
@@ -202,10 +224,12 @@
                 <div class="school-card school-wuxing p-5 relative" onclick="app.selectSchool('wuxing')"><div class="flex items-center gap-2 mb-2"><div class="text-2xl">🔮</div><h4 class="font-bold">五行生肖</h4></div><p class="text-xs opacity-70">個人運勢</p><div class="absolute top-4 right-4 w-2 h-2 rounded-full bg-current opacity-0" id="dot-wuxing"></div></div>
             </div>
 
+            <!-- 控制面板 -->
             <div class="bg-white rounded-3xl p-8 shadow-lg border border-stone-100 relative overflow-hidden mb-12">
                 <div class="absolute -right-10 -top-10 w-40 h-40 bg-stone-50 rounded-full z-0"></div>
                 <div id="school-description" class="relative z-10 mb-8 text-base leading-relaxed text-stone-600 bg-stone-50 p-8 rounded-2xl border-l-4 border-stone-400"></div>
                 
+                <!-- 五行學派專屬區塊 -->
                 <div id="wuxing-options" class="hidden relative z-10 mb-8 bg-pink-50/50 p-6 rounded-2xl border border-pink-100">
                     <div class="flex flex-col gap-4">
                         <div class="flex flex-col md:flex-row gap-4 items-center">
@@ -245,7 +269,7 @@
                     </div>
                 </div>
 
-                <div class="relative z-10 flex flex-col items-center gap-8 border-t border-stone-100 pt-8">
+                <div class="relative z-10 flex flex-col items-center gap-4 border-t border-stone-100 pt-4"> <!-- 間距縮減 gap-8 -> gap-4, pt-8 -> pt-4 -->
                     <div class="flex items-center bg-stone-100 p-2 rounded-2xl">
                         <span class="text-sm font-bold text-stone-500 px-4">生成</span>
                         <div class="flex gap-2">
@@ -258,37 +282,20 @@
                         <span>🚀</span> 執行智能分析
                     </button>
                 </div>
-                <div id="result-area" class="mt-10 hidden border-t border-stone-100 pt-10"><h4 class="text-center font-bold text-stone-400 mb-8 text-sm tracking-widest uppercase">推薦號碼組合 (附帶分析理由)</h4><div id="prediction-output" class="space-y-4"></div></div>
-            </div>
-        </div>
-
-        <!-- 歷史列表 (移至最下方 + 收合功能) -->
-        <div class="bg-white rounded-3xl shadow-md border border-stone-100 overflow-hidden mb-12 animate-[fadeIn_1s_ease-out]">
-            <div class="bg-stone-50 px-6 py-4 border-b border-stone-200 flex justify-between items-center cursor-pointer hover:bg-stone-100 transition" onclick="app.toggleHistory()">
-                <h4 class="font-black text-stone-700 text-lg flex items-center gap-2"><span>📅 歷史開獎記錄</span></h4>
-                <div class="flex items-center gap-3">
-                    <span class="text-xs font-bold text-stone-400 bg-white px-3 py-1 rounded-lg border border-stone-200 shadow-sm" id="list-info">顯示近 5 期</span>
-                    <span id="history-arrow" class="text-stone-400 text-xl transition-transform transform rotate-0">▼</span>
+                <div id="result-area" class="mt-10 hidden border-t border-stone-100 pt-10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="h-px bg-stone-300 flex-1"></div>
+                        <h4 class="font-black text-xl text-stone-800 tracking-tight">推薦號碼組合 (附帶分析理由)</h4>
+                        <div class="h-px bg-stone-300 flex-1"></div>
+                    </div>
+                    <div id="prediction-output" class="space-y-4"></div>
                 </div>
             </div>
-            <!-- 預設隱藏 (max-h-0) -->
-            <div id="history-container" class="max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
-                <div class="overflow-x-auto p-2">
-                    <table class="w-full text-left">
-                        <thead class="text-sm font-bold text-stone-400 uppercase">
-                            <tr><th class="px-6 py-4 rounded-xl bg-white sticky top-0 z-10 w-48">期別資訊</th><th class="px-6 py-4 rounded-xl bg-white sticky top-0 z-10">開出號碼</th></tr>
-                        </thead>
-                        <tbody id="history-list" class="divide-y divide-stone-100"></tbody>
-                    </table>
-                </div>
-                <div id="no-result-msg" class="hidden text-center py-12 text-stone-400 font-bold">沒有符合資料</div>
-            </div>
         </div>
-
         <div class="text-center mt-12 text-xs text-stone-300 font-bold pb-4">DESIGNED FOR LOTTERY ANALYSIS</div>
     </div>
 
-    <!-- 個人檔案 Modal -->
+    <!-- 個人檔案 Modal (保持 V23.6) -->
     <div id="profile-modal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0" id="profile-modal-content">
             <div class="bg-stone-900 px-6 py-5 flex justify-between items-center">
@@ -328,7 +335,6 @@
                             <input type="text" id="new-name" placeholder="暱稱 (必填)" class="custom-input w-1/3 rounded-xl px-4 py-2 text-sm">
                             <input type="text" id="new-realname" placeholder="真實姓名" class="custom-input w-2/3 rounded-xl px-4 py-2 text-sm">
                         </div>
-                        <!-- 詳細文字輸入區 -->
                         <div>
                             <label class="text-[10px] text-stone-400 ml-1">紫微斗數命盤 (請貼上完整文字)</label>
                             <textarea id="new-ziwei" rows="4" class="custom-input w-full rounded-xl px-4 py-2 text-xs font-mono" placeholder="請貼上詳細命盤內容，AI將為您解析..."></textarea>
@@ -392,7 +398,6 @@
                 document.getElementById('search-year').addEventListener('change', (e) => { this.state.filterYear = e.target.value; this.updateDashboard(); });
                 document.getElementById('search-month').addEventListener('change', (e) => { this.state.filterMonth = e.target.value; this.updateDashboard(); });
             },
-            
             async initFirebase() {
                 if (typeof window.firebaseModules === 'undefined') { this.loadProfilesLocal(); return; }
                 const { initializeApp, getAuth, onAuthStateChanged, getFirestore, getDoc, doc } = window.firebaseModules;
@@ -472,7 +477,6 @@
                     alert("API Key 已暫存 (未登入)");
                 }
             },
-            
             async generateAIFortune() {
                 const pid = document.getElementById('profile-select').value;
                 if (!pid) return alert("請先選擇主角");
@@ -596,14 +600,15 @@
             toggleHistory() {
                 const container = document.getElementById('history-container');
                 const arrow = document.getElementById('history-arrow');
+                const info = document.getElementById('list-info');
                 if (container.classList.contains('max-h-0')) {
-                    container.classList.remove('max-h-0');
-                    container.classList.add('max-h-[1000px]');
+                    container.classList.remove('max-h-0'); container.classList.add('max-h-[1000px]');
                     arrow.classList.add('rotate-180');
+                    info.innerText = "隱藏近 5 期";
                 } else {
-                    container.classList.add('max-h-0');
-                    container.classList.remove('max-h-[1000px]');
+                    container.classList.add('max-h-0'); container.classList.remove('max-h-[1000px]');
                     arrow.classList.remove('rotate-180');
+                    info.innerText = "顯示近 5 期";
                 }
             },
 
@@ -615,7 +620,6 @@
                 const ziwei = document.getElementById('new-ziwei').value.trim();
                 const astro = document.getElementById('new-astro').value.trim();
                 if (!name) return alert("請輸入暱稱");
-                
                 this.state.profiles.push({ id: Date.now(), name, realname, ziwei, astro });
                 this.saveProfiles();
                 ['new-name', 'new-realname', 'new-ziwei', 'new-astro'].forEach(id => document.getElementById(id).value = '');
@@ -629,9 +633,7 @@
             async initFetch() { 
                 const statusText = document.getElementById('system-status-text'); 
                 const statusIcon = document.getElementById('system-status-icon');
-                
                 if (window.location.protocol === 'blob:' || window.location.protocol === 'file:') { 
-                    // 預覽模式處理
                     document.getElementById('dashboard-area').classList.remove('hidden');
                     document.getElementById('strategy-area').classList.remove('hidden');
                     this.renderGameTabs([]); 
@@ -639,11 +641,8 @@
                     statusIcon.className = "w-2 h-2 rounded-full bg-stone-300";
                     return; 
                 } 
-                
-                // 正常模式：顯示 Dashboard 並開始載入
                 document.getElementById('dashboard-area').classList.remove('hidden');
                 document.getElementById('strategy-area').classList.remove('hidden');
-                
                 try { 
                     const response = await fetch(`${CONFIG.JSON_URL}?t=${new Date().getTime()}`); 
                     if (!response.ok) throw new Error("Cloud data missing"); 
@@ -651,18 +650,12 @@
                     if (fullData.games) { this.state.rawData = fullData.games; this.state.rawJackpots = fullData.jackpots || {}; } 
                     else { this.state.rawData = fullData; this.state.rawJackpots = {}; } 
                     for (let game in this.state.rawData) { this.state.rawData[game] = this.state.rawData[game].map(item => { item.date = new Date(item.date); return item; }); } 
-                    
-                    statusText.innerText = "系統連線正常";
-                    statusText.className = "text-xs font-bold text-green-600";
-                    statusIcon.className = "w-2 h-2 rounded-full bg-green-500";
-
+                    statusText.innerText = "系統連線正常"; statusText.className = "text-xs font-bold text-green-600"; statusIcon.className = "w-2 h-2 rounded-full bg-green-500";
                     if(fullData.last_updated) { document.getElementById('last-update-time').innerText = `更新：${fullData.last_updated.split(' ')[0]}`; } 
                     this.renderGameTabs(Object.keys(this.state.rawData)); 
                 } catch (e) { 
                     console.error(e); 
-                    statusText.innerText = "連線失敗";
-                    statusText.className = "text-xs font-bold text-red-500";
-                    statusIcon.className = "w-2 h-2 rounded-full bg-red-500";
+                    statusText.innerText = "連線失敗"; statusText.className = "text-xs font-bold text-red-500"; statusIcon.className = "w-2 h-2 rounded-full bg-red-500";
                     this.renderGameTabs([]); 
                 } 
             },
@@ -692,40 +685,38 @@
                 let groupReasons = [];
 
                 if (profile) {
+                    // AI 資料存在 (用於 紫微 & 星座)
                     if (profile.fortune2025) {
                         const month = new Date().getMonth() + 1;
                         const mData = profile.fortune2025.monthly_elements?.find(m => m.month === month);
                         if (mData) {
                             const luckyTails = mData.lucky_tails || [];
                             
-                            if (usePurple || useAstro || useZodiac) {
+                            if (usePurple || useAstro) {
+                                const prefix = usePurple && useAstro ? "紫微星座" : (usePurple ? "紫微" : "星座");
                                 for(let i=1; i<=maxN; i++) { 
                                     if(luckyTails.includes(i%10)) {
-                                        weights[i] += 50;
-                                        numReasons[i] = "流年旺";
+                                        weights[i] += 50; 
+                                        numReasons[i] = `${prefix}旺`;
                                     }
                                 }
-                                groupReasons.push(`AI流年:利${luckyTails.join(',')}尾`);
-                            }
-                        }
-                    } else if (useZodiac || usePurple || useAstro) {
-                        groupReasons.push("基礎命理(建議啟用AI)");
-                        const todayTail = new Date().getDate() % 10;
-                        for(let i=1; i<=maxN; i++) {
-                            if (i % 10 === todayTail) {
-                                weights[i] += 20;
-                                numReasons[i] = "日運";
+                                groupReasons.push(`${prefix}:利${luckyTails.join(',')}尾`);
                             }
                         }
                     }
                     
+                    // 姓名學 (獨立計算)
                     if (useName && profile.realname) {
                         const len = profile.realname.length; 
                         const luckyNum = (len * 7) % maxN || 1;
-                        weights[luckyNum] += 60;
+                        weights[luckyNum] += 40;
                         numReasons[luckyNum] = "姓名格";
                         groupReasons.push(`姓名靈動`);
                     }
+
+                     if (useZodiac && profile.fortune2025) {
+                         // Fallback for zodiac if needed
+                     }
 
                 } else {
                     groupReasons.push("隨機運勢 (未選主角)");
@@ -742,6 +733,7 @@
                     groupReason: `運勢盤：${groupReasons.join(' + ') || '綜合運勢'}` 
                 };
             },
+            // ... (其他演算法保持 V23.5) ...
             algoStat(data, maxN, count) { const freq = {}; data.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1)); const lastSeen = {}; for(let i=1; i<=maxN; i++) lastSeen[i] = -1; data.forEach((d, idx) => { d.numbers.forEach(n => { if (lastSeen[n] === -1) lastSeen[n] = idx; }); }); const weights = {}; const tags = {}; for(let i=1; i<=maxN; i++) { let w = freq[i] || 0; const miss = lastSeen[i] === -1 ? data.length : lastSeen[i]; w += (miss * 0.5); if (miss > 15) tags[i] = `冷${miss}期`; else if (freq[i] > data.length * 0.15) tags[i] = "熱號"; else tags[i] = "常態"; if (w > 500) w = 500; weights[i] = w; } const selected = this.weightedRandomSelect(weights, maxN, count); return { numbers: selected.map(n => ({ val: n, tag: tags[n] })), groupReason: "根據歷史頻率與遺漏值動態回補" }; },
             algoPattern(data, maxN, count) { if(data.length < 2) return this.algoStat(data, maxN, count); const lastDraw = data[0].numbers; const nextDrawCounts = {}; const relationMap = {}; const tailCounts = {}; data.slice(0, 10).forEach(d => { d.numbers.forEach(n => { const tail = n % 10; tailCounts[tail] = (tailCounts[tail] || 0) + 1; }); }); const hotTail = Object.entries(tailCounts).sort((a,b)=>b[1]-a[1])[0][0]; for(let i=1; i<data.length; i++) { const intersection = data[i].numbers.filter(n => lastDraw.includes(n)); if(intersection.length > 0) { data[i-1].numbers.forEach(n => { nextDrawCounts[n] = (nextDrawCounts[n]||0) + intersection.length; if (!relationMap[n]) relationMap[n] = intersection[0]; }); } } if(Object.keys(nextDrawCounts).length === 0) return this.algoStat(data, maxN, count); for(let k in nextDrawCounts) { if (k % 10 == hotTail) nextDrawCounts[k] *= 1.5; nextDrawCounts[k] *= (0.9 + Math.random() * 0.2); } const selected = this.weightedRandomSelect(nextDrawCounts, maxN, count); return { numbers: selected.map(n => ({ val: n, tag: relationMap[n] ? `由${relationMap[n]}拖牌` : (n%10==hotTail ? `${hotTail}尾強勢` : '關聯') })), groupReason: `上期[${lastDraw.slice(0,3).join(',')}]拖牌 + ${hotTail}尾數趨勢融合` }; },
             algoBalance(data, maxN, count) { let bestSet = []; let minScore = 99999; let bestInfo = {}; const zoneCounts = [0,0,0,0,0]; data.slice(0, 30).forEach(d => { d.numbers.forEach(n => { if(n<=9) zoneCounts[0]++; else if(n<=19) zoneCounts[1]++; else if(n<=29) zoneCounts[2]++; else if(n<=39) zoneCounts[3]++; else zoneCounts[4]++; }); }); const coldZoneIdx = zoneCounts.indexOf(Math.min(...zoneCounts)); for(let k=0; k<500; k++) { const set = []; const pool = Array.from({length: maxN}, (_, i) => i + 1); if (Math.random() > 0.5) { const start = coldZoneIdx * 10; const end = start + 9; for(let i=pool.length-1; i>=0; i--) { if(pool[i] >= start && pool[i] <= end) pool.splice(i, 1); } } for(let i=0; i<count; i++) { if(pool.length === 0) break; const idx = Math.floor(Math.random() * pool.length); set.push(pool[idx]); pool.splice(idx, 1); } set.sort((a,b)=>a-b); if (set.length < count) continue; let odd = set.filter(n => n%2!==0).length; let even = count - odd; let diffOE = Math.abs(odd - even); let sum = set.reduce((a,b)=>a+b, 0); let expectedSum = (1 + maxN) * count / 2; let diffSum = Math.abs(sum - expectedSum) / expectedSum; let score = (diffOE * 15) + (diffSum * 50); if(score < minScore) { minScore = score; bestSet = set; bestInfo = { odd, even, sum }; } } const setZones = [0,0,0,0,0]; bestSet.forEach(n => { if(n<=9) setZones[0]++; else if(n<=19) setZones[1]++; else if(n<=29) setZones[2]++; else if(n<=39) setZones[3]++; else setZones[4]++; }); const emptyZone = setZones.findIndex(z => z === 0); const zoneMsg = emptyZone > -1 ? `🚫 斷第${emptyZone+1}區` : ""; return { numbers: bestSet.map(n => ({ val: n, tag: n%2===0 ? '偶' : '奇' })), groupReason: `結構：${bestInfo.odd}奇${bestInfo.even}偶 | 總和 ${bestInfo.sum} | ${zoneMsg}` }; },
