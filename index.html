@@ -35,30 +35,27 @@
     <style>
         body { background-color: #f7f6f2; color: #44403c; letter-spacing: 0.05em; }
         
-        /* 文青風 Tab 按鈕樣式 (修正版：加大尺寸但保持優雅) */
+        /* 文青風 Tab 按鈕樣式 (加大版) */
         .game-tab-btn { 
-            padding: 10px 20px;  /* 適度加大內距 */
-            border-radius: 12px; 
-            font-size: 1rem;     /* 字體加大 */
+            padding: 10px 24px; 
+            border-radius: 9999px; /* 膠囊形狀 */
+            font-size: 1rem; 
             font-weight: 700; 
             transition: all 0.2s ease; 
             cursor: pointer; 
             white-space: nowrap;
             background-color: #f5f5f4; 
             color: #a8a29e; 
-            border: 2px solid transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border: 2px solid transparent; /* 預設透明邊框 */
         }
         .game-tab-btn:hover { background-color: #e7e5e4; color: #57534e; }
-        /* 選取狀態 */
+        
+        /* 選取狀態：依照圖片，加上深色邊框 */
         .game-tab-btn.active { 
             background-color: #fff; 
             color: #44403c; 
-            border-color: #57534e; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-            transform: translateY(-2px);
+            border-color: #44403c; /* 深色邊框 */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
         .school-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 2px solid transparent; background-color: #fff; border-radius: 1rem; }
@@ -102,10 +99,10 @@
 </head>
 <body class="p-4 md:p-6 min-h-screen flex flex-col font-medium text-sm">
 
-    <!-- 1. 恢復原本的 max-w-4xl，保持文青風的精緻感 -->
-    <div class="max-w-4xl mx-auto w-full relative">
+    <!-- 這裡稍微放寬一點點 (5xl) 以容納橫向排列，但不會像 90rem 那麼寬 -->
+    <div class="max-w-5xl mx-auto w-full relative">
         
-        <!-- Header (標題置中) -->
+        <!-- Header (絕對置中) -->
         <div class="relative mb-8 flex justify-center items-center h-20">
             <div class="text-center">
                 <h1 class="text-3xl md:text-4xl font-black text-stone-800 tracking-wider">台彩全能分析儀</h1>
@@ -118,53 +115,60 @@
             </button>
         </div>
 
-        <!-- Dashboard -->
-        <div id="dashboard-area" class="bg-white rounded-3xl p-6 shadow-lg border border-stone-100 mb-8 animate-[fadeIn_0.5s_ease-out]">
+        <!-- Dashboard: 依照您的圖片橫向佈局 -->
+        <div id="dashboard-area" class="bg-white rounded-3xl p-6 md:p-8 shadow-lg border border-stone-100 mb-8 animate-[fadeIn_0.5s_ease-out]">
             
-            <!-- 上方區塊：標題與系統資訊 -->
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-                <div class="flex flex-col items-center md:items-start">
-                    <div class="flex items-center gap-3">
-                        <span class="text-4xl">🎯</span>
+            <!-- 上半部：核心操作區 (Flex Row) -->
+            <!-- 在大螢幕 (lg) 強制橫向排列：左(標題) - 中(按鈕) - 右(篩選) -->
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 pb-6 border-b border-stone-100">
+                
+                <!-- 1. 左側：標題與期數 -->
+                <div class="flex-shrink-0 flex items-center gap-4">
+                    <span class="text-5xl">🎯</span>
+                    <div class="flex flex-col">
                         <h2 class="text-4xl font-black text-stone-800 tracking-tight" id="current-game-title">載入中</h2>
-                    </div>
-                    <div class="flex items-center gap-3 mt-2">
-                        <span class="bg-stone-100 text-stone-600 px-3 py-1 rounded-lg text-sm font-bold tracking-widest" id="latest-period">--期</span>
-                        <div id="jackpot-container" class="hidden text-yellow-600 flex items-center gap-1">
+                        <span class="text-stone-400 text-sm font-bold tracking-widest mt-1" id="latest-period">--期</span>
+                        <div id="jackpot-container" class="hidden text-yellow-600 flex items-center gap-1 mt-1">
                             <span class="text-[10px] uppercase tracking-wider font-bold">Jackpot</span>
-                            <span class="text-lg font-black" id="jackpot-amount">$ --</span>
+                            <span class="text-base font-black" id="jackpot-amount">$ --</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- 系統資訊 (角落) -->
-                <div class="mt-4 md:mt-0 flex flex-col items-end text-[10px] text-stone-400 font-bold">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span id="system-status-icon" class="w-1.5 h-1.5 rounded-full bg-stone-300"></span>
-                        <span id="system-status-text">連線中...</span>
+                <!-- 2. 中間：遊戲選擇按鈕 (佔據中間空間) -->
+                <div class="flex-1 flex justify-center w-full lg:w-auto">
+                    <div class="flex flex-wrap justify-center gap-3" id="game-btn-container">
+                        <!-- JS 生成按鈕 -->
                     </div>
-                    <div>資料庫：<span id="total-count" class="text-stone-600">0</span> 期</div>
-                    <div>更新：<span id="last-update-time">--</span></div>
+                </div>
+
+                <!-- 3. 右側：篩選器 -->
+                <div class="flex-shrink-0 flex items-center gap-2">
+                    <div class="bg-stone-50 p-2 rounded-xl flex items-center gap-2">
+                        <select id="search-year" class="custom-input custom-select w-24 rounded-lg px-3 py-2 text-sm font-bold cursor-pointer"><option value="">年份</option></select>
+                        <select id="search-month" class="custom-input custom-select w-24 rounded-lg px-3 py-2 text-sm font-bold cursor-pointer"><option value="">月份</option></select>
+                        <button onclick="app.resetFilter()" class="bg-white border border-stone-200 text-stone-400 hover:text-stone-600 hover:border-stone-300 px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap">重置</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 下半部：底部資訊列 (依照圖片) -->
+            <div class="pt-4 flex justify-between items-center text-xs font-bold text-stone-400">
+                <!-- 左下：系統狀態 -->
+                <div class="flex items-center gap-2">
+                    <span id="system-status-icon" class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span id="system-status-text" class="text-green-600">系統連線正常</span>
+                </div>
+                <!-- 右下：資料庫資訊 -->
+                <div class="flex gap-4">
+                    <span>資料庫：<span id="total-count" class="text-stone-600">0</span> 期</span>
+                    <span>更新：<span id="last-update-time">--</span></span>
                 </div>
             </div>
 
-            <!-- 2. 中間區塊：遊戲選擇按鈕 (移到中間位置) -->
-            <!-- 增加 mb-6 與上方標題分開，增加 mb-6 與下方篩選器分開 -->
-            <div class="mb-6 overflow-x-auto hide-scrollbar">
-                <div class="flex flex-wrap justify-center gap-3" id="game-btn-container">
-                    <!-- JS 生成按鈕 -->
-                </div>
-            </div>
-
-            <!-- 3. 下方區塊：年份與重置 (篩選器) -->
-            <div class="bg-stone-50 rounded-xl p-3 flex flex-wrap justify-center items-center gap-3 border border-stone-100">
-                <select id="search-year" class="custom-input custom-select w-32 rounded-lg px-4 py-2 text-sm font-bold cursor-pointer"><option value="">年份</option></select>
-                <select id="search-month" class="custom-input custom-select w-32 rounded-lg px-4 py-2 text-sm font-bold cursor-pointer"><option value="">月份</option></select>
-                <button onclick="app.resetFilter()" class="bg-white border border-stone-200 text-stone-400 hover:text-stone-600 hover:border-stone-300 px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap">重置</button>
-            </div>
-
-            <!-- 3星/4星 子玩法區 -->
-            <div id="submode-area" class="hidden mt-4 pt-4 border-t border-stone-100 flex justify-center items-center gap-4">
+            <!-- 3星/4星 子玩法區 (隱藏式) -->
+            <div id="submode-area" class="hidden mt-4 pt-4 border-t border-stone-100 flex justify-center items-center gap-4 bg-stone-50 rounded-xl p-3">
                 <div class="flex gap-2" id="submode-tabs"></div>
                 <button onclick="app.toggleRules()" class="text-xs text-stone-400 hover:text-stone-600 underline">規則說明</button>
             </div>
