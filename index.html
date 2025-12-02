@@ -34,265 +34,268 @@
 
     <style>
         body { background-color: #f7f6f2; color: #44403c; letter-spacing: 0.05em; }
+        
+        /* 文青風 Tab 按鈕樣式 */
+        .game-tab-btn { 
+            padding: 6px 16px; 
+            border-radius: 9999px; 
+            font-size: 0.85rem; 
+            font-weight: 700; 
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+            white-space: nowrap;
+            background-color: #f5f5f4; /* 預設淡灰底 */
+            color: #78716c; /* 預設深灰字 */
+            border: 1px solid transparent;
+        }
+        .game-tab-btn:hover { background-color: #e7e5e4; }
+        /* 選取狀態：深色字 + 深色框 + 淡底(或透明) */
+        .game-tab-btn.active { 
+            background-color: #fafaf9; 
+            color: #44403c; 
+            border-color: #57534e; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
         .school-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 2px solid transparent; background-color: #fff; border-radius: 1rem; }
         .school-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        .school-card.active { border-color: #78716c; background-color: #fffaf0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+        /* 選取時的邊框顏色由 JS 動態控制 (border-school-xxx) */
+        .school-card.active { background-color: #fffaf0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
         
         .school-stat { color: #475569; } .school-pattern { color: #7c3aed; } .school-balance { color: #059669; } .school-ai { color: #d97706; } .school-wuxing { color: #be185d; }
+        
         .ball { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; position: relative; z-index: 1; box-shadow: 2px 3px 6px rgba(0,0,0,0.1); }
         .ball-hot { background: #e11d48; color: #fffaf0; } 
-        .ball-sm { width: 36px; height: 36px; font-size: 16px; border-radius: 50%; background: #fff; color: #57534e; border: 1px solid #d6d3d1; box-shadow: 1px 2px 4px rgba(0,0,0,0.05); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 6px; }
+        .ball-sm { width: 32px; height: 32px; font-size: 14px; border-radius: 50%; background: #fff; color: #57534e; border: 1px solid #d6d3d1; box-shadow: 1px 2px 4px rgba(0,0,0,0.05); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 4px; }
         .ball-special { border-color: #f43f5e; color: #f43f5e; background: #fff1f2; }
-        .stat-box { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); border: 1px solid #f0ebe4; }
+        .stat-box { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); border: 1px solid #f0ebe4; }
         
-        /* 新的遊戲按鈕樣式 */
-        .game-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 8px; border-radius: 16px; font-weight: 700; transition: all 0.2s; color: #78716c; background: #f5f5f4; cursor: pointer; border: 2px solid transparent; }
-        .game-btn:hover { background: #e7e5e4; transform: translateY(-2px); }
-        .game-btn.active { background: #292524; color: #fafaf9; box-shadow: 0 8px 16px rgba(41, 37, 36, 0.2); border-color: #292524; }
-        
-        .submode-tab { padding: 8px 16px; border-radius: 999px; border: 1px solid #e7e5e4; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; background: white; color: #57534e; }
-        .submode-tab.active { background: #be185d; color: white; border-color: #be185d; font-weight: bold; }
+        .submode-tab { padding: 4px 12px; border-radius: 999px; border: 1px solid #e7e5e4; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; background: white; color: #57534e; }
+        .submode-tab.active { background: #57534e; color: white; border-color: #57534e; font-weight: bold; }
 
         .hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .custom-input { background-color: #f5f5f4; border: 2px solid #e7e5e4; color: #44403c; transition: all 0.2s; }
-        .custom-input:focus { background-color: #fff; border-color: #a8a29e; outline: none; box-shadow: 0 0 0 3px rgba(168, 162, 158, 0.2); }
-        .custom-select { appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2378716c' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1.2em 1.2em; }
-        .reason-tag { font-size: 0.65rem; margin-top: 6px; color: #57534e; background: #f5f5f4; padding: 3px 8px; border-radius: 6px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; text-align: center; font-weight: 700; border: 1px solid #e7e5e4; }
+        .custom-input { background-color: #f5f5f4; border: 1px solid #e7e5e4; color: #44403c; transition: all 0.2s; }
+        .custom-input:focus { background-color: #fff; border-color: #a8a29e; outline: none; }
+        .custom-select { appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2378716c' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1em 1em; }
+        .reason-tag { font-size: 0.65rem; margin-top: 6px; color: #57534e; background: #f5f5f4; padding: 2px 6px; border-radius: 4px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; text-align: center; font-weight: 700; border: 1px solid #e7e5e4; }
         .modal-overlay { background-color: rgba(41, 37, 36, 0.6); backdrop-filter: blur(4px); }
         .spinner { border: 3px solid rgba(0,0,0,0.1); border-radius: 50%; border-top: 3px solid #be185d; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .rotate-180 { transform: rotate(180deg); }
+        
+        /* 標題分隔線樣式 */
+        .title-divider { display: flex; align-items: center; justify-content: center; gap: 1rem; color: #44403c; font-size: 1.5rem; font-weight: 900; letter-spacing: -0.025em; }
+        .title-divider::before, .title-divider::after { content: ''; display: block; height: 2px; width: 40px; background-color: #e7e5e4; border-radius: 2px; }
     </style>
 </head>
-<body class="p-4 md:p-8 min-h-screen flex flex-col font-medium">
+<body class="p-4 md:p-6 min-h-screen flex flex-col font-medium text-sm">
 
-    <div class="max-w-6xl mx-auto w-full relative">
+    <div class="max-w-4xl mx-auto w-full relative">
         
         <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl md:text-3xl font-black text-stone-800 tracking-wider">台彩全能分析儀</h1>
-            <button onclick="app.toggleProfileModal()" class="bg-white p-2 md:p-3 rounded-2xl shadow-sm border border-stone-200 hover:shadow-md transition group relative" title="個人檔案管理">
-                <span class="text-xl group-hover:scale-110 transition-transform block">👤</span>
-                <span id="login-status-dot" class="absolute top-2 right-2 w-2 h-2 bg-stone-300 rounded-full"></span>
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-black text-stone-800 tracking-wider">台彩全能分析儀</h1>
+                <p class="text-xs text-stone-500 font-bold tracking-widest mt-1 uppercase">數據融合 • 智能戰術 • 雙區運算</p>
+            </div>
+            <button onclick="app.toggleProfileModal()" class="bg-white p-2 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition group relative" title="個人檔案管理">
+                <span class="text-lg group-hover:scale-110 transition-transform block">👤</span>
+                <span id="login-status-dot" class="absolute top-2 right-2 w-1.5 h-1.5 bg-stone-300 rounded-full"></span>
             </button>
         </div>
 
-        <!-- 全新整合儀表板 -->
-        <div id="dashboard-area" class="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl border border-stone-100 mb-10 relative overflow-hidden animate-[fadeIn_0.6s_ease-out]">
-            <!-- 裝飾背景 -->
-            <div class="absolute top-0 right-0 w-64 h-64 bg-stone-50 rounded-full -translate-y-1/2 translate-x-1/2 z-0"></div>
-            
-            <div class="relative z-10">
-                <!-- 標題與資訊列 -->
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-4xl">🎯</span>
-                            <span class="text-4xl md:text-5xl font-black text-stone-800 tracking-tighter" id="current-game-title">大樂透</span>
-                        </div>
-                        <div class="flex items-center gap-3 text-stone-500 font-bold ml-1">
-                            <span class="bg-stone-100 px-3 py-1 rounded-lg text-sm" id="latest-period">Loading...</span>
-                            <div id="jackpot-container" class="hidden text-yellow-600 flex items-center gap-1">
-                                <span class="text-xs uppercase tracking-wider">Jackpot</span>
-                                <span class="text-xl font-black" id="jackpot-amount">$ --</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 系統狀態 -->
-                    <div class="bg-stone-50/80 backdrop-blur px-4 py-3 rounded-xl border border-stone-100 text-xs md:text-sm text-stone-500 text-right">
-                        <div class="flex items-center justify-end gap-2 mb-1">
-                            <span id="system-status-icon" class="w-2 h-2 rounded-full bg-stone-300"></span>
-                            <span id="system-status-text" class="font-bold">連線中...</span>
-                        </div>
-                        <div>資料庫：<span id="total-count" class="text-stone-800 font-bold">0</span> 期</div>
-                        <div class="text-[10px] text-stone-400 mt-1">更新：<span id="last-update-time">--</span></div>
-                    </div>
-                </div>
-
-                <!-- 遊戲選擇大按鈕區 -->
-                <div class="grid grid-cols-3 md:grid-cols-5 gap-3 mb-6" id="game-btn-container">
-                    <!-- JS 生成按鈕 -->
-                </div>
-
-                <!-- 玩法與規則區 (3星彩/4星彩專用) -->
-                <div id="submode-area" class="hidden bg-stone-50 rounded-2xl p-4 border border-stone-100">
-                    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                        <div class="flex flex-wrap gap-2" id="submode-tabs">
-                            <!-- JS 生成子玩法選項 -->
-                        </div>
-                        <button onclick="app.toggleRules()" class="text-xs font-bold text-stone-400 hover:text-stone-600 flex items-center gap-1">
-                            <span>📖</span> 玩法說明
-                        </button>
-                    </div>
-                    <div id="game-rules-content" class="hidden mt-4 pt-4 border-t border-stone-200 text-sm text-stone-600">
-                        <!-- JS 注入規則 -->
-                    </div>
-                </div>
-
-                <!-- 搜尋與過濾區 (簡化版) -->
-                <div class="flex flex-wrap gap-3 mt-6 pt-6 border-t border-stone-100">
-                    <input type="text" id="search-period" placeholder="#期號查詢" class="custom-input w-32 rounded-xl px-4 py-2 text-sm font-bold">
-                    <select id="search-year" class="custom-input custom-select w-32 rounded-xl px-4 py-2 text-sm font-bold"><option value="">年份</option></select>
-                    <select id="search-month" class="custom-input custom-select w-32 rounded-xl px-4 py-2 text-sm font-bold"><option value="">月份</option></select>
-                    <button onclick="app.resetFilter()" class="text-xs font-bold text-stone-400 hover:text-stone-600 underline px-2">重置</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 統計方塊 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="stat-box"><h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">🔥 年度熱門 <span class="text-stone-300">Year</span></h4><div id="stat-year" class="flex flex-wrap gap-3 justify-center"></div></div>
-            <div class="stat-box"><h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">📅 本月熱門 <span class="text-stone-300">Month</span></h4><div id="stat-month" class="flex flex-wrap gap-3 justify-center"></div></div>
-            <div class="stat-box"><h4 class="font-bold text-stone-400 text-xs uppercase mb-4 flex justify-between tracking-widest">⚡ 近期熱勢 <span class="text-stone-300">Trend</span></h4><div id="stat-recent" class="flex flex-wrap gap-3 justify-center"></div></div>
-        </div>
-
-        <!-- 戰術流派選擇 -->
-        <div id="strategy-area" class="mb-12">
-            <div class="flex items-center gap-4 mb-6">
-                <div class="h-px bg-stone-200 flex-1"></div>
-                <h3 class="font-black text-2xl text-stone-800 tracking-tight">🧠 戰術流派</h3>
-                <div class="h-px bg-stone-200 flex-1"></div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-                <!-- 派別卡片 -->
-                <div class="school-card school-balance p-5 relative active" onclick="app.selectSchool('balance')"><div class="flex items-center gap-2 mb-2"><div class="text-2xl">⚖️</div><h4 class="font-bold">平衡學派</h4></div><p class="text-xs opacity-70">結構防守</p><div class="absolute top-4 right-4 w-2 h-2 rounded-full bg-current opacity-100" id="dot-balance"></div></div>
-                <div class="school-card school-stat p-5 relative" onclick="app.selectSchool('stat')"><div class="flex items-center gap-2 mb-2"><div class="text-2xl">📊</div><h4 class="font-bold">統計學派</h4></div><p class="text-xs opacity-70">數據熱度</p><div class="absolute top-4 right-4 w-2 h-2 rounded-full bg-current opacity-0" id="dot-stat"></div></div>
-                <div class="school-card school-pattern p-5 relative" onclick="app.selectSchool('pattern')"><div class="flex items-center gap-2 mb-2"><div class="text-2xl">🔗</div><h4 class="font-bold">關聯學派</h4></div><p class="text-xs opacity-70">拖牌版路</p><div class="absolute top-4 right-4 w-2 h-2 rounded-full bg-current opacity-0" id="dot-pattern"></div></div>
-                <div class="school-card school-ai p-5 relative" onclick="app.selectSchool('ai')"><div class="flex items-center gap-2 mb-2"><div class="text-2xl">🤖</div><h4 class="font-bold">AI 學派</h4></div><p class="text-xs opacity-70">近期趨勢</p><div class="absolute top-4 right-4 w-2 h-2 rounded-full bg-current opacity-0" id="dot-ai"></div></div>
-                <div class="school-card school-wuxing p-5 relative" onclick="app.selectSchool('wuxing')"><div class="flex items-center gap-2 mb-2"><div class="text-2xl">🔮</div><h4 class="font-bold">五行生肖</h4></div><p class="text-xs opacity-70">個人運勢</p><div class="absolute top-4 right-4 w-2 h-2 rounded-full bg-current opacity-0" id="dot-wuxing"></div></div>
-            </div>
-
-            <div class="bg-white rounded-3xl p-8 shadow-lg border border-stone-100 relative overflow-hidden">
-                <div id="school-description" class="relative z-10 mb-8 text-base leading-relaxed text-stone-600 bg-stone-50 p-8 rounded-2xl border-l-4 border-stone-400"></div>
+        <!-- 3. Dashboard 重構：緊湊化 -->
+        <div id="dashboard-area" class="bg-white rounded-2xl p-5 shadow-lg border border-stone-100 mb-6 relative animate-[fadeIn_0.5s_ease-out]">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 
-                <!-- 五行運勢控制區 (增加間距) -->
-                <div id="wuxing-options" class="hidden relative z-10 mb-8 bg-pink-50/50 p-6 rounded-2xl border border-pink-100 mt-8">
-                    <div class="flex flex-col gap-6"> <!-- gap-6 增加間距 -->
-                        <div>
-                            <label class="text-xs font-bold text-pink-700 ml-1 mb-2 block">選擇運勢主角</label>
-                            <div class="flex gap-2">
-                                <select id="profile-select" onchange="app.onProfileChange()" class="custom-select w-full bg-white border border-pink-200 rounded-xl px-4 py-3 text-sm font-bold text-stone-700 cursor-pointer">
-                                    <option value="">請先在個人檔案新增...</option>
-                                </select>
-                                <button onclick="app.deleteCurrentProfile()" class="bg-red-100 text-red-500 px-4 rounded-xl hover:bg-red-200 transition border border-red-200">🗑️</button>
-                            </div>
+                <!-- 左側：標題與期數 -->
+                <div class="flex flex-col">
+                    <div class="flex items-baseline gap-3">
+                        <span class="text-4xl">🎯</span>
+                        <h2 class="text-3xl font-black text-stone-800 tracking-tight" id="current-game-title">載入中</h2>
+                    </div>
+                    <div class="flex items-center gap-3 mt-1 ml-1">
+                        <span class="bg-stone-100 text-stone-600 px-2 py-0.5 rounded text-xs font-bold" id="latest-period">--期</span>
+                        <div id="jackpot-container" class="hidden text-yellow-600 flex items-center gap-1">
+                            <span class="text-[10px] uppercase tracking-wider font-bold">Jackpot</span>
+                            <span class="text-base font-black" id="jackpot-amount">$ --</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：控制區 (Tab + Filter) -->
+                <div class="flex flex-col items-end gap-3 w-full md:w-auto">
+                    <!-- 2. 遊戲 Tab (文青風) -->
+                    <div class="flex flex-wrap justify-end gap-2" id="game-btn-container">
+                        <!-- JS 生成 -->
+                    </div>
+
+                    <!-- 篩選器 -->
+                    <div class="flex items-center gap-2">
+                        <select id="search-year" class="custom-input custom-select w-24 rounded-lg px-3 py-1.5 text-xs font-bold"><option value="">年份</option></select>
+                        <select id="search-month" class="custom-input custom-select w-24 rounded-lg px-3 py-1.5 text-xs font-bold"><option value="">月份</option></select>
+                        <button onclick="app.resetFilter()" class="text-xs text-stone-400 hover:text-stone-600 underline px-1">重置</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部資訊列 (緊湊) -->
+            <div class="mt-4 pt-3 border-t border-stone-100 flex justify-between items-center text-[10px] text-stone-400 font-bold">
+                <div class="flex items-center gap-2">
+                    <span id="system-status-icon" class="w-1.5 h-1.5 rounded-full bg-stone-300"></span>
+                    <span id="system-status-text">連線中...</span>
+                </div>
+                <div class="flex gap-3">
+                    <span>資料庫：<span id="total-count" class="text-stone-600">0</span> 期</span>
+                    <span>更新：<span id="last-update-time">--</span></span>
+                </div>
+            </div>
+
+            <!-- 3星/4星 子玩法區 -->
+            <div id="submode-area" class="hidden mt-3 bg-stone-50 rounded-xl p-3 border border-stone-100 flex justify-between items-center">
+                <div class="flex gap-2" id="submode-tabs"></div>
+                <button onclick="app.toggleRules()" class="text-xs text-stone-400 hover:text-stone-600 flex items-center gap-1">📖 規則</button>
+            </div>
+            <div id="game-rules-content" class="hidden mt-2 p-3 bg-stone-50 rounded-xl border border-stone-100 text-xs text-stone-600 leading-relaxed"></div>
+        </div>
+
+        <!-- 6. 順序對調：熱門統計 (最上) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="stat-box"><h4 class="font-bold text-stone-400 text-[10px] uppercase mb-3 flex justify-between tracking-widest">🔥 年度熱門 <span class="text-stone-300">Year</span></h4><div id="stat-year" class="flex flex-wrap gap-2 justify-center"></div></div>
+            <div class="stat-box"><h4 class="font-bold text-stone-400 text-[10px] uppercase mb-3 flex justify-between tracking-widest">📅 本月熱門 <span class="text-stone-300">Month</span></h4><div id="stat-month" class="flex flex-wrap gap-2 justify-center"></div></div>
+            <div class="stat-box"><h4 class="font-bold text-stone-400 text-[10px] uppercase mb-3 flex justify-between tracking-widest">⚡ 近期熱勢 <span class="text-stone-300">Trend</span></h4><div id="stat-recent" class="flex flex-wrap gap-2 justify-center"></div></div>
+        </div>
+
+        <!-- 6. 順序對調：歷史紀錄 (中間) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden mb-8">
+            <div class="bg-stone-50 px-5 py-3 border-b border-stone-200 flex justify-between items-center cursor-pointer hover:bg-stone-100 transition group" onclick="app.toggleHistory()">
+                <h4 class="font-bold text-stone-700 text-base flex items-center gap-2">📅 歷史開獎記錄</h4>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-stone-400 group-hover:text-stone-600 transition" id="history-toggle-text">顯示近 5 期</span>
+                    <span id="history-arrow" class="text-stone-400 text-xs transition-transform transform rotate-0">▼</span>
+                </div>
+            </div>
+            <div id="history-container" class="max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                <div class="overflow-x-auto p-1">
+                    <table class="w-full text-left">
+                        <thead class="text-xs font-bold text-stone-400 uppercase">
+                            <tr><th class="px-5 py-3 bg-white sticky top-0 w-32">期別</th><th class="px-5 py-3 bg-white sticky top-0">號碼</th></tr>
+                        </thead>
+                        <tbody id="history-list" class="divide-y divide-stone-100 text-xs"></tbody>
+                    </table>
+                </div>
+                <div id="no-result-msg" class="hidden text-center py-8 text-stone-400 font-bold text-xs">無符合資料</div>
+            </div>
+        </div>
+
+        <!-- 6. 順序對調：戰術流派與推薦 (最下) -->
+        <div id="strategy-area" class="mb-12">
+            <!-- 4. 戰術流派標題 -->
+            <div class="title-divider mb-6">🧠 戰術流派</div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                <!-- 派別卡片 -->
+                <div class="school-card school-balance p-4 relative" onclick="app.selectSchool('balance')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">⚖️</div><h4 class="font-bold text-sm">平衡學派</h4></div><p class="text-[10px] opacity-70">結構防守</p></div>
+                <div class="school-card school-stat p-4 relative" onclick="app.selectSchool('stat')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">📊</div><h4 class="font-bold text-sm">統計學派</h4></div><p class="text-[10px] opacity-70">數據熱度</p></div>
+                <div class="school-card school-pattern p-4 relative" onclick="app.selectSchool('pattern')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🔗</div><h4 class="font-bold text-sm">關聯學派</h4></div><p class="text-[10px] opacity-70">拖牌版路</p></div>
+                <div class="school-card school-ai p-4 relative" onclick="app.selectSchool('ai')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🤖</div><h4 class="font-bold text-sm">AI 學派</h4></div><p class="text-[10px] opacity-70">近期趨勢</p></div>
+                <div class="school-card school-wuxing p-4 relative col-span-2 md:col-span-1" onclick="app.selectSchool('wuxing')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🔮</div><h4 class="font-bold text-sm">五行生肖</h4></div><p class="text-[10px] opacity-70">個人運勢</p></div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-lg border border-stone-100 relative overflow-hidden">
+                <div id="school-description" class="relative z-10 mb-6 text-sm leading-relaxed text-stone-600 bg-stone-50 p-5 rounded-xl border-l-4 border-stone-400"></div>
+                
+                <!-- 五行運勢控制區 -->
+                <div id="wuxing-options" class="hidden relative z-10 mb-6 bg-pink-50/50 p-4 rounded-xl border border-pink-100">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex gap-2 items-center">
+                            <label class="text-xs font-bold text-pink-700 whitespace-nowrap">運勢主角</label>
+                            <select id="profile-select" onchange="app.onProfileChange()" class="custom-select flex-1 bg-white border border-pink-200 rounded-lg px-3 py-2 text-xs font-bold text-stone-700 cursor-pointer">
+                                <option value="">請新增...</option>
+                            </select>
+                            <button onclick="app.deleteCurrentProfile()" class="bg-white text-red-400 px-3 py-2 rounded-lg hover:bg-red-50 border border-pink-200 text-xs">🗑️</button>
                         </div>
                         
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100"><input type="checkbox" id="check-purple" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">紫微斗數</span></label>
-                            <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100"><input type="checkbox" id="check-astro" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">西洋星盤</span></label>
-                            <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100"><input type="checkbox" id="check-name" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">姓名靈動</span></label>
-                            <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-pink-100"><input type="checkbox" id="check-zodiac" class="accent-pink-600 w-4 h-4" checked><span class="text-sm font-bold text-stone-600">生肖運勢</span></label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-pink-100"><input type="checkbox" id="check-purple" class="accent-pink-600" checked><span class="text-xs font-bold text-stone-600">紫微</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-pink-100"><input type="checkbox" id="check-astro" class="accent-pink-600" checked><span class="text-xs font-bold text-stone-600">星盤</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-pink-100"><input type="checkbox" id="check-name" class="accent-pink-600" checked><span class="text-xs font-bold text-stone-600">姓名</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-pink-100"><input type="checkbox" id="check-zodiac" class="accent-pink-600" checked><span class="text-xs font-bold text-stone-600">生肖</span></label>
                         </div>
 
                         <!-- AI 流年區塊 -->
-                        <div id="ai-fortune-section" class="hidden border-t border-pink-200 pt-4">
+                        <div id="ai-fortune-section" class="hidden border-t border-pink-200 pt-3">
                             <div class="flex items-center justify-between mb-2">
-                                <h4 class="text-pink-800 font-bold text-sm">🔮 AI 流年命盤解析</h4>
+                                <h4 class="text-pink-800 font-bold text-xs">🔮 AI 流年解析</h4>
                                 <div class="flex gap-2">
-                                    <button onclick="app.clearFortune()" id="btn-clear-ai" class="hidden text-xs text-stone-400 underline hover:text-pink-600">清除</button>
-                                    <button onclick="app.generateAIFortune()" id="btn-calc-ai" class="bg-pink-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-pink-700 transition flex items-center gap-2 shadow-sm">
-                                        ✨ 啟動大師批流年
+                                    <button onclick="app.clearFortune()" id="btn-clear-ai" class="hidden text-[10px] text-stone-400 underline hover:text-pink-600">清除</button>
+                                    <button onclick="app.generateAIFortune()" id="btn-calc-ai" class="bg-pink-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-pink-700 transition flex items-center gap-1 shadow-sm">
+                                        ✨ 大師批流年
                                     </button>
                                 </div>
                             </div>
-                            
-                            <!-- AI 結果顯示區 (取代 Alert) -->
-                            <div id="ai-result-display" class="hidden bg-white p-4 rounded-xl border border-pink-100 text-sm text-stone-600 leading-relaxed shadow-inner">
-                                <!-- JS 注入內容 -->
-                            </div>
-                            
-                            <div id="ai-loading" class="hidden mt-3 text-xs text-pink-600 font-bold flex items-center gap-2 justify-center py-2">
-                                <div class="spinner"></div> AI 宗師正在分析命盤，請稍候...
-                            </div>
+                            <div id="ai-result-display" class="hidden bg-white p-3 rounded-lg border border-pink-100 text-xs text-stone-600 leading-relaxed shadow-inner max-h-32 overflow-y-auto custom-scrollbar"></div>
+                            <div id="ai-loading" class="hidden mt-2 text-xs text-pink-600 font-bold flex items-center gap-2 justify-center"><div class="spinner"></div> 分析中...</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 生成按鈕區 -->
-                <div class="relative z-10 flex flex-col items-center gap-8 border-t border-stone-100 pt-8">
-                    <div class="flex items-center bg-stone-100 p-2 rounded-2xl">
-                        <span class="text-sm font-bold text-stone-500 px-4">生成</span>
-                        <div class="flex gap-2">
-                            <label class="cursor-pointer"><input type="radio" name="count" value="1" class="peer hidden" checked><span class="block px-6 py-2 rounded-xl bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-sm font-bold transition shadow-sm">1 組</span></label>
-                            <label class="cursor-pointer"><input type="radio" name="count" value="3" class="peer hidden"><span class="block px-6 py-2 rounded-xl bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-sm font-bold transition shadow-sm">3 組</span></label>
-                            <label class="cursor-pointer"><input type="radio" name="count" value="5" class="peer hidden"><span class="block px-6 py-2 rounded-xl bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-sm font-bold transition shadow-sm">5 組</span></label>
+                <div class="relative z-10 flex flex-col items-center gap-6 border-t border-stone-100 pt-6">
+                    <div class="flex items-center bg-stone-50 p-1.5 rounded-xl border border-stone-100">
+                        <span class="text-xs font-bold text-stone-400 px-3">數量</span>
+                        <div class="flex gap-1">
+                            <label class="cursor-pointer"><input type="radio" name="count" value="1" class="peer hidden" checked><span class="block px-4 py-1.5 rounded-lg bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-xs font-bold transition shadow-sm border border-transparent peer-checked:border-stone-800">1</span></label>
+                            <label class="cursor-pointer"><input type="radio" name="count" value="3" class="peer hidden"><span class="block px-4 py-1.5 rounded-lg bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-xs font-bold transition shadow-sm border border-transparent peer-checked:border-stone-800">3</span></label>
+                            <label class="cursor-pointer"><input type="radio" name="count" value="5" class="peer hidden"><span class="block px-4 py-1.5 rounded-lg bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-xs font-bold transition shadow-sm border border-transparent peer-checked:border-stone-800">5</span></label>
                         </div>
                     </div>
-                    <button onclick="app.runPrediction()" class="w-full md:w-auto bg-stone-800 hover:bg-stone-700 text-stone-50 px-16 py-5 rounded-2xl font-black text-xl shadow-xl shadow-stone-200 active:scale-95 transition-all flex items-center justify-center gap-3">
+                    <button onclick="app.runPrediction()" class="w-full md:w-auto bg-stone-800 hover:bg-stone-700 text-stone-50 px-12 py-3 rounded-xl font-bold text-lg shadow-lg shadow-stone-200 active:scale-95 transition-all flex items-center justify-center gap-2">
                         <span>🚀</span> 執行智能分析
                     </button>
                 </div>
 
-                <!-- 結果顯示區 -->
-                <div id="result-area" class="mt-10 hidden border-t border-stone-100 pt-10">
-                    <h4 class="text-center font-bold text-stone-400 mb-8 text-sm tracking-widest uppercase">💎 推薦號碼組合</h4>
-                    <div id="prediction-output" class="space-y-4"></div>
+                <!-- 5. 推薦號碼標題 (統一風格) -->
+                <div id="result-area" class="mt-10 hidden border-t border-stone-100 pt-8">
+                    <div class="title-divider mb-6">💎 推薦號碼組合</div>
+                    <div id="prediction-output" class="space-y-3"></div>
                 </div>
             </div>
         </div>
 
-        <!-- 歷史列表 -->
-        <div class="bg-white rounded-3xl shadow-md border border-stone-100 overflow-hidden mb-12">
-            <div class="bg-stone-50 px-6 py-4 border-b border-stone-200 flex justify-between items-center cursor-pointer hover:bg-stone-100 transition" onclick="app.toggleHistory()">
-                <h4 class="font-black text-stone-700 text-lg flex items-center gap-2"><span>📅 歷史開獎記錄</span></h4>
-                <div class="flex items-center gap-3">
-                    <span class="text-xs font-bold text-stone-400 bg-white px-3 py-1 rounded-lg border border-stone-200 shadow-sm" id="list-info">顯示近 5 期</span>
-                    <span id="history-arrow" class="text-stone-400 text-xl transition-transform transform rotate-0">▼</span>
-                </div>
-            </div>
-            <div id="history-container" class="max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
-                <div class="overflow-x-auto p-2">
-                    <table class="w-full text-left">
-                        <thead class="text-sm font-bold text-stone-400 uppercase">
-                            <tr><th class="px-6 py-4 bg-white sticky top-0">期別資訊</th><th class="px-6 py-4 bg-white sticky top-0">開出號碼</th></tr>
-                        </thead>
-                        <tbody id="history-list" class="divide-y divide-stone-100"></tbody>
-                    </table>
-                </div>
-                <div id="no-result-msg" class="hidden text-center py-12 text-stone-400 font-bold">沒有符合資料</div>
-            </div>
-        </div>
-
-        <div class="text-center mt-12 text-xs text-stone-300 font-bold pb-4">DESIGNED FOR LOTTERY ANALYSIS</div>
+        <div class="text-center mt-8 text-[10px] text-stone-300 font-bold pb-4">DESIGNED FOR LOTTERY ANALYSIS</div>
     </div>
 
-    <!-- 個人檔案 Modal (保持原樣，僅對應 JS 更新) -->
+    <!-- 個人檔案 Modal (保持功能不變) -->
     <div id="profile-modal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0" id="profile-modal-content">
-            <div class="bg-stone-900 px-6 py-5 flex justify-between items-center">
-                <h3 class="text-white font-bold text-lg">👤 個人檔案 & AI 設定</h3>
-                <button onclick="app.toggleProfileModal()" class="text-stone-400 hover:text-white text-xl">✕</button>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-95 opacity-0" id="profile-modal-content">
+            <div class="bg-stone-900 px-5 py-4 flex justify-between items-center">
+                <h3 class="text-white font-bold text-sm">👤 個人檔案 & AI</h3>
+                <button onclick="app.toggleProfileModal()" class="text-stone-400 hover:text-white">✕</button>
             </div>
-            <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                <!-- API Key -->
-                <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
-                    <label class="text-xs font-bold text-yellow-700 mb-1 block">Google Gemini API Key</label>
+            <div class="p-5 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                    <label class="text-[10px] font-bold text-yellow-700 mb-1 block">API Key</label>
                     <div class="flex gap-2">
-                        <input type="password" id="gemini-api-key" placeholder="貼上您的 AIza... 金鑰" class="custom-input w-full rounded-lg px-3 py-2 text-sm font-mono">
-                        <button onclick="app.saveApiKey()" class="bg-yellow-600 text-white px-4 rounded-lg text-xs font-bold hover:bg-yellow-700">儲存</button>
+                        <input type="password" id="gemini-api-key" placeholder="貼上 Key" class="custom-input w-full rounded px-2 py-1 text-xs font-mono">
+                        <button onclick="app.saveApiKey()" class="bg-yellow-600 text-white px-3 rounded text-xs font-bold hover:bg-yellow-700">存</button>
                     </div>
                 </div>
-                <!-- 登入與列表 -->
-                <div id="auth-section" class="bg-stone-50 p-4 rounded-xl border border-stone-100 text-center">
-                    <button onclick="app.loginGoogle()" id="btn-login" class="w-full bg-white border border-stone-200 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2">使用 Google 登入</button>
-                    <div id="user-info" class="hidden"><p class="text-sm font-bold mb-2" id="user-name">User</p><button onclick="app.logoutGoogle()" class="text-xs text-red-400 underline">登出</button></div>
+                <div id="auth-section" class="bg-stone-50 p-3 rounded-lg border border-stone-100 text-center">
+                    <button onclick="app.loginGoogle()" id="btn-login" class="w-full bg-white border border-stone-200 py-1.5 rounded text-xs font-bold">Google 登入</button>
+                    <div id="user-info" class="hidden"><p class="text-xs font-bold mb-1" id="user-name">User</p><button onclick="app.logoutGoogle()" class="text-[10px] text-red-400 underline">登出</button></div>
                 </div>
-                <div id="profile-list" class="space-y-3"></div>
-                <!-- 新增檔案 -->
-                <div class="border-t border-stone-100 pt-4 space-y-3">
-                    <div class="flex gap-3"><input type="text" id="new-name" placeholder="暱稱" class="custom-input w-1/3 rounded-xl px-4 py-2 text-sm"><input type="text" id="new-realname" placeholder="真實姓名" class="custom-input w-2/3 rounded-xl px-4 py-2 text-sm"></div>
-                    <textarea id="new-ziwei" rows="3" class="custom-input w-full rounded-xl px-4 py-2 text-xs" placeholder="紫微斗數資料..."></textarea>
-                    <textarea id="new-astro" rows="3" class="custom-input w-full rounded-xl px-4 py-2 text-xs" placeholder="星盤資料..."></textarea>
-                    <button onclick="app.addProfile()" class="w-full bg-stone-800 text-white py-3 rounded-xl font-bold">儲存檔案</button>
+                <div id="profile-list" class="space-y-2"></div>
+                <div class="border-t border-stone-100 pt-3 space-y-2">
+                    <div class="flex gap-2"><input type="text" id="new-name" placeholder="暱稱" class="custom-input w-1/3 rounded px-2 py-1.5 text-xs"><input type="text" id="new-realname" placeholder="姓名" class="custom-input w-2/3 rounded px-2 py-1.5 text-xs"></div>
+                    <textarea id="new-ziwei" rows="2" class="custom-input w-full rounded px-2 py-1.5 text-xs" placeholder="紫微斗數..."></textarea>
+                    <textarea id="new-astro" rows="2" class="custom-input w-full rounded px-2 py-1.5 text-xs" placeholder="星盤..."></textarea>
+                    <button onclick="app.addProfile()" class="w-full bg-stone-800 text-white py-2 rounded font-bold text-xs">新增</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 載入邏輯檔案 -->
     <script type="module" src="game_config.js"></script>
     <script type="module" src="app.js"></script>
 </body>
