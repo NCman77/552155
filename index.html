@@ -91,8 +91,8 @@
 </head>
 <body class="p-4 md:p-6 min-h-screen flex flex-col font-medium text-sm">
 
-    <!-- 版面寬度 5xl -->
-    <div class="max-w-5xl mx-auto w-full relative">
+    <!-- 版面寬度 6xl (比上一版 5xl 稍寬，讓中間按鈕可以完整呈現) -->
+    <div class="max-w-6xl mx-auto w-full relative">
         
         <!-- Header 絕對置中 -->
         <div class="relative mb-8 flex justify-center items-center h-20">
@@ -128,19 +128,20 @@
                     </div>
                 </div>
 
-                <!-- 3. 右側：篩選器 -->
+                <!-- 3. 右側：篩選器 (改回精緻小版) -->
                 <div class="flex-shrink-0 flex items-center gap-2">
-                    <div class="bg-stone-50 p-2 rounded-xl flex items-center gap-2">
-                        <select id="search-year" class="custom-input custom-select w-24 rounded-lg px-3 py-2 text-sm font-bold cursor-pointer"><option value="">年份</option></select>
-                        <select id="search-month" class="custom-input custom-select w-24 rounded-lg px-3 py-2 text-sm font-bold cursor-pointer"><option value="">月份</option></select>
-                        <button onclick="app.resetFilter()" class="bg-white border border-stone-200 text-stone-400 hover:text-stone-600 hover:border-stone-300 px-4 py-2 rounded-lg text-sm font-bold transition whitespace-nowrap">重置</button>
+                    <div class="bg-stone-50 p-1.5 rounded-xl flex items-center gap-1.5 border border-stone-100">
+                        <select id="search-year" class="custom-input custom-select w-20 rounded-lg px-2 py-1.5 text-xs font-bold cursor-pointer"><option value="">年份</option></select>
+                        <select id="search-month" class="custom-input custom-select w-20 rounded-lg px-2 py-1.5 text-xs font-bold cursor-pointer"><option value="">月份</option></select>
+                        <button onclick="app.resetFilter()" class="bg-white border border-stone-200 text-stone-400 hover:text-stone-600 hover:border-stone-300 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap">重置</button>
                     </div>
                 </div>
 
             </div>
 
             <!-- 下半部：底部資訊列 & 子玩法區 (整合) -->
-            <div class="pt-4 border-t border-stone-100 flex flex-wrap md:flex-nowrap justify-between items-center text-xs font-bold text-stone-400 gap-4">
+            <!-- 增加 h-14 min-h-[3.5rem] 確保高度固定，防止跳動 -->
+            <div class="pt-4 border-t border-stone-100 flex flex-wrap md:flex-nowrap justify-between items-center text-xs font-bold text-stone-400 gap-4 h-14 min-h-[3.5rem]">
                 
                 <!-- 左下：系統狀態 -->
                 <div class="flex items-center gap-2 min-w-max">
@@ -149,9 +150,10 @@
                 </div>
 
                 <!-- 中間：子玩法 (3星/4星顯示於此) -->
+                <!-- flex-1 確保佔據中間空間 -->
                 <div id="submode-area" class="hidden flex-1 flex justify-center items-center gap-3">
                     <div class="flex gap-2" id="submode-tabs"></div>
-                    <button onclick="app.toggleRules()" class="text-stone-400 hover:text-stone-600 underline">規則說明</button>
+                    <button onclick="app.toggleRules()" class="text-stone-400 hover:text-stone-600 underline whitespace-nowrap">規則說明</button>
                 </div>
 
                 <!-- 右下：資料庫資訊 -->
