@@ -21,12 +21,18 @@ const App = {
         this.initFirebase();
         this.selectSchool('balance');
         this.populateYearSelect();
+        this.populateMonthSelect(); // 新增：初始化月份
         this.initFetch();
         this.bindEvents();
     },
 
     bindEvents() {
-        document.getElementById('search-period').addEventListener('input', (e) => { this.state.filterPeriod = e.target.value.trim(); this.updateDashboard(); });
+        // 移除期數搜尋的監聽器，因為UI已經拿掉輸入框，或合併到年份選擇
+        // 如果HTML中沒有 search-period 輸入框，這裡會報錯，所以要檢查存在性
+        const periodInput = document.getElementById('search-period');
+        if (periodInput) {
+            periodInput.addEventListener('input', (e) => { this.state.filterPeriod = e.target.value.trim(); this.updateDashboard(); });
+        }
         document.getElementById('search-year').addEventListener('change', (e) => { this.state.filterYear = e.target.value; this.updateDashboard(); });
         document.getElementById('search-month').addEventListener('change', (e) => { this.state.filterMonth = e.target.value; this.updateDashboard(); });
     },
@@ -403,8 +409,33 @@ const App = {
         html += `</div>`;
         container.innerHTML += html;
     },
-    populateYearSelect() { const yearSelect = document.getElementById('search-year'); for (let y = 2021; y <= 2026; y++) { const opt = document.createElement('option'); opt.value = y; opt.innerText = `${y}`; yearSelect.appendChild(opt); } },
-    resetFilter() { this.state.filterPeriod = ""; this.state.filterYear = ""; this.state.filterMonth = ""; document.getElementById('search-period').value = ""; document.getElementById('search-year').value = ""; document.getElementById('search-month').value = ""; this.updateDashboard(); },
+    populateYearSelect() { const yearSelect = document.getElementById('search-year'); for (let y = 2021; y <= 2026; y++) { const opt = document.createElement('option'); opt.value = y; opt.innerText = `${y} 年`; yearSelect.appendChild(opt); } },
+    
+    // 新增：初始化月份下拉選單
+    populateMonthSelect() { 
+        const monthSelect = document.getElementById('search-month'); 
+        for (let m = 1; m <= 12; m++) { 
+            const opt = document.createElement('option'); 
+            opt.value = m; 
+            opt.innerText = `${m} 月`; 
+            monthSelect.appendChild(opt); 
+        } 
+    },
+
+    // 修正：重置功能需清空 DOM 數值
+    resetFilter() { 
+        this.state.filterPeriod = ""; 
+        this.state.filterYear = ""; 
+        this.state.filterMonth = ""; 
+        
+        // 清空 DOM 元素
+        const pInput = document.getElementById('search-period');
+        if(pInput) pInput.value = "";
+        document.getElementById('search-year').value = ""; 
+        document.getElementById('search-month').value = ""; 
+        
+        this.updateDashboard(); 
+    },
     
     // 6. 歷史紀錄切換 - 文字動態變更
     toggleHistory() {
