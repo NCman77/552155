@@ -39,8 +39,7 @@
         .game-tab-btn { 
             padding: 10px 24px; 
             border-radius: 9999px; 
-            /* 修改2：字體加大至 1.125rem (18px) 以匹配學派標題 */
-            font-size: 1.125rem; 
+            font-size: 1.125rem; /* 18px (與學派標題一致) */
             font-weight: 700; 
             transition: all 0.2s ease; 
             cursor: pointer; 
@@ -65,11 +64,11 @@
         
         .school-stat { color: #475569; } .school-pattern { color: #7c3aed; } .school-balance { color: #059669; } .school-ai { color: #d97706; } .school-wuxing { color: #be185d; }
         
-        /* 年度熱門 (較大) */
+        /* 年度熱門 (大球 56px) */
         .ball { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 24px; position: relative; z-index: 1; box-shadow: 2px 3px 6px rgba(0,0,0,0.1); }
         .ball-hot { background: #e11d48; color: #fffaf0; } 
         
-        /* 歷史紀錄 & 推薦組合 (中型 42px) */
+        /* 歷史紀錄 & 推薦組合 (中球 42px) */
         .ball-sm { width: 42px; height: 42px; font-size: 18px; border-radius: 50%; background: #fff; color: #57534e; border: 1px solid #d6d3d1; box-shadow: 1px 2px 4px rgba(0,0,0,0.05); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 4px; }
         .ball-special { border-color: #f43f5e; color: #f43f5e; background: #fff1f2; }
         
@@ -118,7 +117,6 @@
             
             <!-- 上半部：核心操作區 (強制橫向) -->
             <div class="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 pb-6">
-                
                 <!-- 1. 左側：標題 -->
                 <div class="flex-shrink-0 flex items-center gap-4">
                     <span class="text-5xl">🎯</span>
@@ -127,14 +125,10 @@
                         <span class="text-stone-400 text-sm font-bold tracking-widest mt-1" id="latest-period">--期</span>
                     </div>
                 </div>
-
-                <!-- 2. 中間：遊戲按鈕 (使用 flex-nowrap 強制單行) -->
+                <!-- 2. 中間：遊戲按鈕 -->
                 <div class="flex-1 flex justify-start lg:justify-center w-full lg:w-auto overflow-x-auto hide-scrollbar px-2">
-                    <div class="flex flex-nowrap gap-3" id="game-btn-container">
-                        <!-- JS 生成按鈕 -->
-                    </div>
+                    <div class="flex flex-nowrap gap-3" id="game-btn-container"></div>
                 </div>
-
                 <!-- 3. 右側：篩選器 -->
                 <div class="flex-shrink-0 flex items-center gap-2">
                     <div class="bg-stone-50 p-1.5 rounded-xl flex items-center gap-1.5 border border-stone-100">
@@ -143,42 +137,34 @@
                         <button onclick="app.resetFilter()" class="bg-white border border-stone-200 text-stone-400 hover:text-stone-600 hover:border-stone-300 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap">重置</button>
                     </div>
                 </div>
-
             </div>
 
-            <!-- 下半部：底部資訊列 & 子玩法區 (整合) -->
-            <!-- 修改1：將字體調整為 text-sm (14px) -->
+            <!-- 下半部：底部資訊列 & 子玩法區 -->
             <div class="pt-4 border-t border-stone-100 flex flex-wrap md:flex-nowrap justify-between items-center text-sm font-bold text-stone-400 gap-4 h-14 min-h-[3.5rem]">
-                
-                <!-- 左下：系統狀態 -->
+                <!-- 左下：系統狀態 (字體加大 text-sm) -->
                 <div class="flex items-center gap-2 min-w-max">
                     <span id="system-status-icon" class="w-2 h-2 rounded-full bg-green-500"></span>
                     <span id="system-status-text" class="text-green-600">系統連線正常</span>
                 </div>
-
-                <!-- 中間：子玩法 (3星/4星顯示於此) -->
+                <!-- 中間：子玩法 -->
                 <div id="submode-area" class="hidden flex-1 flex justify-center items-center gap-3">
                     <div class="flex gap-2" id="submode-tabs"></div>
                     <button onclick="app.toggleRules()" class="text-stone-400 hover:text-stone-600 underline whitespace-nowrap">規則說明</button>
                 </div>
-
-                <!-- 右下：資料庫資訊 -->
+                <!-- 右下：資料庫資訊 (字體加大 text-sm) -->
                 <div class="flex gap-4 min-w-max">
                     <span>資料庫：<span id="total-count" class="text-stone-600">0</span> 期</span>
                     <span>更新：<span id="last-update-time">--</span></span>
-                    <!-- Jackpot 移到這裡顯示更整齊 -->
                     <div id="jackpot-container" class="hidden text-yellow-600 flex items-center gap-1">
                         <span class="uppercase tracking-wider">Jackpot</span>
                         <span class="font-black" id="jackpot-amount">$ --</span>
                     </div>
                 </div>
             </div>
-
-            <!-- 規則內容 (展開) -->
             <div id="game-rules-content" class="hidden mt-3 p-4 bg-stone-50 rounded-xl border border-stone-100 text-xs text-stone-600 leading-relaxed"></div>
         </div>
 
-        <!-- 熱門統計 (字體顏色變鮮艷) -->
+        <!-- 熱門統計 (顏色鮮艷) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="stat-box">
                 <h4 class="font-bold text-rose-500 text-sm uppercase mb-3 flex justify-between tracking-widest">🔥 年度熱門 <span class="text-rose-300">Year</span></h4>
@@ -221,7 +207,7 @@
             <div class="title-divider mb-8">🧠 戰術流派</div>
             
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-                <!-- 修改2：學派標題字級加大至 text-lg (18px) 與遊戲按鈕一致；下方描述加大至 text-sm (14px) 與系統狀態一致 -->
+                <!-- 標題加大至 text-lg (18px)，描述加大至 text-sm (14px) -->
                 <div class="school-card school-balance p-4 relative" onclick="app.selectSchool('balance')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">⚖️</div><h4 class="font-bold text-lg">平衡學派</h4></div><p class="text-sm opacity-70">結構防守</p></div>
                 <div class="school-card school-stat p-4 relative" onclick="app.selectSchool('stat')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">📊</div><h4 class="font-bold text-lg">統計學派</h4></div><p class="text-sm opacity-70">數據熱度</p></div>
                 <div class="school-card school-pattern p-4 relative" onclick="app.selectSchool('pattern')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🔗</div><h4 class="font-bold text-lg">關聯學派</h4></div><p class="text-sm opacity-70">拖牌版路</p></div>
@@ -232,7 +218,7 @@
             <div class="bg-white rounded-2xl p-6 shadow-lg border border-stone-100 relative overflow-hidden">
                 <div id="school-description" class="relative z-10 mb-6 text-sm leading-relaxed text-stone-600 bg-stone-50 p-5 rounded-xl border-l-4 border-stone-400"></div>
                 
-                <!-- 五行運勢 (選項文字加大至 text-base) -->
+                <!-- 五行運勢控制區 (加大間距 mt-8 與文字 text-base) -->
                 <div id="wuxing-options" class="hidden relative z-10 mb-6 mt-8 bg-pink-50/50 p-4 rounded-xl border border-pink-100">
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-center">
