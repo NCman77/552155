@@ -39,7 +39,8 @@
         .game-tab-btn { 
             padding: 10px 24px; 
             border-radius: 9999px; 
-            font-size: 1rem; 
+            /* 修改2：字體加大至 1.125rem (18px) 以匹配學派標題 */
+            font-size: 1.125rem; 
             font-weight: 700; 
             transition: all 0.2s ease; 
             cursor: pointer; 
@@ -146,7 +147,8 @@
             </div>
 
             <!-- 下半部：底部資訊列 & 子玩法區 (整合) -->
-            <div class="pt-4 border-t border-stone-100 flex flex-wrap md:flex-nowrap justify-between items-center text-xs font-bold text-stone-400 gap-4 h-14 min-h-[3.5rem]">
+            <!-- 修改1：將字體調整為 text-sm (14px) -->
+            <div class="pt-4 border-t border-stone-100 flex flex-wrap md:flex-nowrap justify-between items-center text-sm font-bold text-stone-400 gap-4 h-14 min-h-[3.5rem]">
                 
                 <!-- 左下：系統狀態 -->
                 <div class="flex items-center gap-2 min-w-max">
@@ -176,7 +178,7 @@
             <div id="game-rules-content" class="hidden mt-3 p-4 bg-stone-50 rounded-xl border border-stone-100 text-xs text-stone-600 leading-relaxed"></div>
         </div>
 
-        <!-- 熱門統計 (修改2：字體顏色變鮮艷) -->
+        <!-- 熱門統計 (字體顏色變鮮艷) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="stat-box">
                 <h4 class="font-bold text-rose-500 text-sm uppercase mb-3 flex justify-between tracking-widest">🔥 年度熱門 <span class="text-rose-300">Year</span></h4>
@@ -219,18 +221,18 @@
             <div class="title-divider mb-8">🧠 戰術流派</div>
             
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-                <!-- 修改1：學派標題字級加大至 text-base -->
-                <div class="school-card school-balance p-4 relative" onclick="app.selectSchool('balance')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">⚖️</div><h4 class="font-bold text-base">平衡學派</h4></div><p class="text-[10px] opacity-70">結構防守</p></div>
-                <div class="school-card school-stat p-4 relative" onclick="app.selectSchool('stat')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">📊</div><h4 class="font-bold text-base">統計學派</h4></div><p class="text-[10px] opacity-70">數據熱度</p></div>
-                <div class="school-card school-pattern p-4 relative" onclick="app.selectSchool('pattern')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🔗</div><h4 class="font-bold text-base">關聯學派</h4></div><p class="text-[10px] opacity-70">拖牌版路</p></div>
-                <div class="school-card school-ai p-4 relative" onclick="app.selectSchool('ai')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🤖</div><h4 class="font-bold text-base">AI 學派</h4></div><p class="text-[10px] opacity-70">近期趨勢</p></div>
-                <div class="school-card school-wuxing p-4 relative col-span-2 md:col-span-1" onclick="app.selectSchool('wuxing')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🔮</div><h4 class="font-bold text-base">五行生肖</h4></div><p class="text-[10px] opacity-70">個人運勢</p></div>
+                <!-- 修改2：學派標題字級加大至 text-lg (18px) 與遊戲按鈕一致；下方描述加大至 text-sm (14px) 與系統狀態一致 -->
+                <div class="school-card school-balance p-4 relative" onclick="app.selectSchool('balance')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">⚖️</div><h4 class="font-bold text-lg">平衡學派</h4></div><p class="text-sm opacity-70">結構防守</p></div>
+                <div class="school-card school-stat p-4 relative" onclick="app.selectSchool('stat')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">📊</div><h4 class="font-bold text-lg">統計學派</h4></div><p class="text-sm opacity-70">數據熱度</p></div>
+                <div class="school-card school-pattern p-4 relative" onclick="app.selectSchool('pattern')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🔗</div><h4 class="font-bold text-lg">關聯學派</h4></div><p class="text-sm opacity-70">拖牌版路</p></div>
+                <div class="school-card school-ai p-4 relative" onclick="app.selectSchool('ai')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🤖</div><h4 class="font-bold text-lg">AI 學派</h4></div><p class="text-sm opacity-70">近期趨勢</p></div>
+                <div class="school-card school-wuxing p-4 relative col-span-2 md:col-span-1" onclick="app.selectSchool('wuxing')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🔮</div><h4 class="font-bold text-lg">五行生肖</h4></div><p class="text-sm opacity-70">個人運勢</p></div>
             </div>
 
             <div class="bg-white rounded-2xl p-6 shadow-lg border border-stone-100 relative overflow-hidden">
                 <div id="school-description" class="relative z-10 mb-6 text-sm leading-relaxed text-stone-600 bg-stone-50 p-5 rounded-xl border-l-4 border-stone-400"></div>
                 
-                <!-- 修改3 & 4：增加間距 (mt-8) 並加大選項文字至 text-base -->
+                <!-- 五行運勢 (選項文字加大至 text-base) -->
                 <div id="wuxing-options" class="hidden relative z-10 mb-6 mt-8 bg-pink-50/50 p-4 rounded-xl border border-pink-100">
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-center">
