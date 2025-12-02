@@ -395,15 +395,14 @@ const App = {
         const container = document.getElementById('prediction-output');
         const colors = { stat: 'bg-stone-200 text-stone-700', pattern: 'bg-purple-100 text-purple-700', balance: 'bg-emerald-100 text-emerald-800', ai: 'bg-amber-100 text-amber-800', wuxing: 'bg-pink-100 text-pink-800' };
         const colorClass = colors[this.state.currentSchool];
-        let html = `<div class="flex flex-col gap-2 p-4 bg-white rounded-xl border border-stone-200 shadow-sm animate-fade-in hover:shadow-md transition"><div class="flex items-center gap-3"><span class="text-[10px] font-black text-stone-300 tracking-widest">SET ${index}</span><div class="flex flex-wrap gap-2">`;
-        
-        // 修改處：使用 .ball-sm (42px) 並移除 inline width/height 限制
+        // 修改：使用 .ball-sm (56px) 並放大解釋文字
+        let html = `<div class="flex flex-col gap-3 p-5 bg-white rounded-xl border border-stone-200 shadow-sm animate-fade-in hover:shadow-md transition"><div class="flex items-center gap-3"><span class="text-xs font-black text-stone-300 tracking-widest">SET ${index}</span><div class="flex flex-wrap gap-2">`;
         resultObj.numbers.forEach(item => { 
             html += `<div class="flex flex-col items-center"><div class="ball-sm ${colorClass}" style="box-shadow: none;">${item.val}</div>${item.tag ? `<div class="reason-tag">${item.tag}</div>` : ''}</div>`; 
         });
-        
         html += `</div></div>`;
-        if (resultObj.groupReason) { html += `<div class="text-[10px] text-stone-500 font-medium bg-stone-50 px-2 py-1.5 rounded border border-stone-100 flex items-center gap-1"><span class="text-sm">💡</span> ${resultObj.groupReason}</div>`; }
+        // 修改：加大組合解釋文字至 text-sm
+        if (resultObj.groupReason) { html += `<div class="text-sm text-stone-500 font-medium bg-stone-50 px-3 py-2 rounded border border-stone-100 flex items-center gap-2"><span class="text-lg">💡</span> ${resultObj.groupReason}</div>`; }
         html += `</div>`;
         container.innerHTML += html;
     },
