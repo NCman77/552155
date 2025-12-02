@@ -35,10 +35,10 @@
     <style>
         body { background-color: #f7f6f2; color: #44403c; letter-spacing: 0.05em; }
         
-        /* 文青風 Tab 按鈕樣式 (加大版) */
+        /* 文青風 Tab 按鈕樣式 */
         .game-tab-btn { 
             padding: 10px 24px; 
-            border-radius: 9999px; /* 膠囊形狀 */
+            border-radius: 9999px; 
             font-size: 1rem; 
             font-weight: 700; 
             transition: all 0.2s ease; 
@@ -46,15 +46,15 @@
             white-space: nowrap;
             background-color: #f5f5f4; 
             color: #a8a29e; 
-            border: 2px solid transparent; /* 預設透明邊框 */
+            border: 2px solid transparent; 
         }
         .game-tab-btn:hover { background-color: #e7e5e4; color: #57534e; }
         
-        /* 選取狀態：依照圖片，加上深色邊框 */
+        /* 選取狀態：深色邊框 */
         .game-tab-btn.active { 
             background-color: #fff; 
             color: #44403c; 
-            border-color: #44403c; /* 深色邊框 */
+            border-color: #44403c; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
@@ -83,61 +83,47 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .rotate-180 { transform: rotate(180deg); }
         
-        /* 標題分隔線樣式 (滿版) */
         .title-divider { display: flex; align-items: center; justify-content: center; width: 100%; color: #44403c; font-size: 1.25rem; font-weight: 900; letter-spacing: 0.05em; }
-        .title-divider::before, .title-divider::after { 
-            content: ''; 
-            display: block; 
-            flex: 1; /* 佔滿剩餘空間 */
-            height: 2px; 
-            background-color: #e7e5e4; 
-            border-radius: 2px; 
-        }
+        .title-divider::before, .title-divider::after { content: ''; display: block; flex: 1; height: 2px; background-color: #e7e5e4; border-radius: 2px; }
         .title-divider::before { margin-right: 1.5rem; }
         .title-divider::after { margin-left: 1.5rem; }
     </style>
 </head>
 <body class="p-4 md:p-6 min-h-screen flex flex-col font-medium text-sm">
 
-    <!-- 這裡稍微放寬一點點 (5xl) 以容納橫向排列，但不會像 90rem 那麼寬 -->
+    <!-- 版面寬度 5xl -->
     <div class="max-w-5xl mx-auto w-full relative">
         
-        <!-- Header (絕對置中) -->
+        <!-- Header 絕對置中 -->
         <div class="relative mb-8 flex justify-center items-center h-20">
             <div class="text-center">
                 <h1 class="text-3xl md:text-4xl font-black text-stone-800 tracking-wider">台彩全能分析儀</h1>
                 <p class="text-xs text-stone-500 font-bold tracking-[0.2em] mt-2 uppercase">數據融合 • 智能戰術 • 雙區運算</p>
             </div>
-            <!-- 個人按鈕絕對定位在右側 -->
             <button onclick="app.toggleProfileModal()" class="absolute right-0 top-0 bg-white p-2 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition group" title="個人檔案管理">
                 <span class="text-lg group-hover:scale-110 transition-transform block">👤</span>
                 <span id="login-status-dot" class="absolute top-2 right-2 w-1.5 h-1.5 bg-stone-300 rounded-full"></span>
             </button>
         </div>
 
-        <!-- Dashboard: 依照您的圖片橫向佈局 -->
+        <!-- Dashboard -->
         <div id="dashboard-area" class="bg-white rounded-3xl p-6 md:p-8 shadow-lg border border-stone-100 mb-8 animate-[fadeIn_0.5s_ease-out]">
             
-            <!-- 上半部：核心操作區 (Flex Row) -->
-            <!-- 在大螢幕 (lg) 強制橫向排列：左(標題) - 中(按鈕) - 右(篩選) -->
-            <div class="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 pb-6 border-b border-stone-100">
+            <!-- 上半部：核心操作區 (強制橫向) -->
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 pb-6">
                 
-                <!-- 1. 左側：標題與期數 -->
+                <!-- 1. 左側：標題 -->
                 <div class="flex-shrink-0 flex items-center gap-4">
                     <span class="text-5xl">🎯</span>
                     <div class="flex flex-col">
                         <h2 class="text-4xl font-black text-stone-800 tracking-tight" id="current-game-title">載入中</h2>
                         <span class="text-stone-400 text-sm font-bold tracking-widest mt-1" id="latest-period">--期</span>
-                        <div id="jackpot-container" class="hidden text-yellow-600 flex items-center gap-1 mt-1">
-                            <span class="text-[10px] uppercase tracking-wider font-bold">Jackpot</span>
-                            <span class="text-base font-black" id="jackpot-amount">$ --</span>
-                        </div>
                     </div>
                 </div>
 
-                <!-- 2. 中間：遊戲選擇按鈕 (佔據中間空間) -->
-                <div class="flex-1 flex justify-center w-full lg:w-auto">
-                    <div class="flex flex-wrap justify-center gap-3" id="game-btn-container">
+                <!-- 2. 中間：遊戲按鈕 (使用 flex-nowrap 強制單行) -->
+                <div class="flex-1 flex justify-center w-full lg:w-auto overflow-x-auto hide-scrollbar px-2">
+                    <div class="flex flex-nowrap gap-3" id="game-btn-container">
                         <!-- JS 生成按鈕 -->
                     </div>
                 </div>
@@ -153,25 +139,34 @@
 
             </div>
 
-            <!-- 下半部：底部資訊列 (依照圖片) -->
-            <div class="pt-4 flex justify-between items-center text-xs font-bold text-stone-400">
+            <!-- 下半部：底部資訊列 & 子玩法區 (整合) -->
+            <div class="pt-4 border-t border-stone-100 flex flex-wrap md:flex-nowrap justify-between items-center text-xs font-bold text-stone-400 gap-4">
+                
                 <!-- 左下：系統狀態 -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 min-w-max">
                     <span id="system-status-icon" class="w-2 h-2 rounded-full bg-green-500"></span>
                     <span id="system-status-text" class="text-green-600">系統連線正常</span>
                 </div>
+
+                <!-- 中間：子玩法 (3星/4星顯示於此) -->
+                <div id="submode-area" class="hidden flex-1 flex justify-center items-center gap-3">
+                    <div class="flex gap-2" id="submode-tabs"></div>
+                    <button onclick="app.toggleRules()" class="text-stone-400 hover:text-stone-600 underline">規則說明</button>
+                </div>
+
                 <!-- 右下：資料庫資訊 -->
-                <div class="flex gap-4">
+                <div class="flex gap-4 min-w-max">
                     <span>資料庫：<span id="total-count" class="text-stone-600">0</span> 期</span>
                     <span>更新：<span id="last-update-time">--</span></span>
+                    <!-- Jackpot 移到這裡顯示更整齊 -->
+                    <div id="jackpot-container" class="hidden text-yellow-600 flex items-center gap-1">
+                        <span class="uppercase tracking-wider">Jackpot</span>
+                        <span class="font-black" id="jackpot-amount">$ --</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- 3星/4星 子玩法區 (隱藏式) -->
-            <div id="submode-area" class="hidden mt-4 pt-4 border-t border-stone-100 flex justify-center items-center gap-4 bg-stone-50 rounded-xl p-3">
-                <div class="flex gap-2" id="submode-tabs"></div>
-                <button onclick="app.toggleRules()" class="text-xs text-stone-400 hover:text-stone-600 underline">規則說明</button>
-            </div>
+            <!-- 規則內容 (展開) -->
             <div id="game-rules-content" class="hidden mt-3 p-4 bg-stone-50 rounded-xl border border-stone-100 text-xs text-stone-600 leading-relaxed"></div>
         </div>
 
@@ -206,7 +201,6 @@
 
         <!-- 戰術流派與推薦 -->
         <div id="strategy-area" class="mb-12">
-            <!-- 分隔線 (滿版) -->
             <div class="title-divider mb-8">🧠 戰術流派</div>
             
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
@@ -267,7 +261,6 @@
                     </button>
                 </div>
 
-                <!-- 分隔線 (滿版) -->
                 <div id="result-area" class="mt-10 hidden border-t border-stone-100 pt-8">
                     <div class="title-divider mb-6">💎 推薦號碼組合</div>
                     <div id="prediction-output" class="space-y-3"></div>
