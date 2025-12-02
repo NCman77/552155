@@ -21,14 +21,12 @@ const App = {
         this.initFirebase();
         this.selectSchool('balance');
         this.populateYearSelect();
-        this.populateMonthSelect(); // 新增：初始化月份
+        this.populateMonthSelect();
         this.initFetch();
         this.bindEvents();
     },
 
     bindEvents() {
-        // 移除期數搜尋的監聽器，因為UI已經拿掉輸入框，或合併到年份選擇
-        // 如果HTML中沒有 search-period 輸入框，這裡會報錯，所以要檢查存在性
         const periodInput = document.getElementById('search-period');
         if (periodInput) {
             periodInput.addEventListener('input', (e) => { this.state.filterPeriod = e.target.value.trim(); this.updateDashboard(); });
@@ -171,8 +169,8 @@ const App = {
             this.state.rawJackpots = fullData.jackpots || {};
             for (let game in this.state.rawData) { this.state.rawData[game] = this.state.rawData[game].map(item => ({...item, date: new Date(item.date)})); }
             document.getElementById('system-status-text').innerText = "系統連線正常";
-            document.getElementById('system-status-text').className = "text-green-600 font-bold";
-            document.getElementById('system-status-icon').className = "w-1.5 h-1.5 rounded-full bg-green-500";
+            document.getElementById('system-status-text').className = "text-green-600";
+            document.getElementById('system-status-icon').className = "w-2 h-2 rounded-full bg-green-500";
             if(fullData.last_updated) document.getElementById('last-update-time').innerText = fullData.last_updated.split(' ')[0];
             this.renderGameButtons();
         } catch(e) {
@@ -182,15 +180,13 @@ const App = {
         }
     },
 
-    // 2. 遊戲選擇按鈕 (文青風) - 移除 Emoji
     renderGameButtons() {
         const container = document.getElementById('game-btn-container');
         container.innerHTML = '';
         GAME_CONFIG.ORDER.forEach(gameName => {
             const btn = document.createElement('div');
-            // 使用新 class: game-tab-btn
             btn.className = `game-tab-btn ${gameName === this.state.currentGame ? 'active' : ''}`;
-            btn.innerText = gameName; // 只顯示文字，無 Emoji
+            btn.innerText = gameName; 
             btn.onclick = () => {
                 this.state.currentGame = gameName;
                 this.state.currentSubMode = null;
@@ -285,14 +281,12 @@ const App = {
         el.innerHTML = sorted.map(([n, c]) => `<div class="flex flex-col items-center"><div class="ball ball-hot mb-1 scale-75">${n}</div><div class="text-[10px] text-stone-400 font-bold">${c}</div></div>`).join('');
     },
 
-    // 4. 戰術流派選擇 - 動態邊框顏色
     selectSchool(school) {
         this.state.currentSchool = school;
         const info = GAME_CONFIG.SCHOOLS[school];
         
         document.querySelectorAll('.school-card').forEach(el => {
             el.classList.remove('active');
-            // 移除所有可能的顏色邊框 class
             Object.values(GAME_CONFIG.SCHOOLS).forEach(s => {
                 if(s.color) el.classList.remove(s.color);
             });
@@ -301,7 +295,6 @@ const App = {
         const activeCard = document.querySelector(`.school-${school}`);
         if(activeCard) {
             activeCard.classList.add('active');
-            // 加入該學派特定的顏色邊框 (例如 border-school-balance)
             activeCard.classList.add(info.color);
         }
         
@@ -403,41 +396,28 @@ const App = {
         const colors = { stat: 'bg-stone-200 text-stone-700', pattern: 'bg-purple-100 text-purple-700', balance: 'bg-emerald-100 text-emerald-800', ai: 'bg-amber-100 text-amber-800', wuxing: 'bg-pink-100 text-pink-800' };
         const colorClass = colors[this.state.currentSchool];
         let html = `<div class="flex flex-col gap-2 p-4 bg-white rounded-xl border border-stone-200 shadow-sm animate-fade-in hover:shadow-md transition"><div class="flex items-center gap-3"><span class="text-[10px] font-black text-stone-300 tracking-widest">SET ${index}</span><div class="flex flex-wrap gap-2">`;
-        resultObj.numbers.forEach(item => { html += `<div class="flex flex-col items-center"><div class="ball ${colorClass}" style="width:36px;height:36px;font-size:16px;box-shadow:none;">${item.val}</div>${item.tag ? `<div class="reason-tag">${item.tag}</div>` : ''}</div>`; });
+        
+        // 修改處：使用 .ball-sm (42px) 並移除 inline width/height 限制
+        resultObj.numbers.forEach(item => { 
+            html += `<div class="flex flex-col items-center"><div class="ball-sm ${colorClass}" style="box-shadow: none;">${item.val}</div>${item.tag ? `<div class="reason-tag">${item.tag}</div>` : ''}</div>`; 
+        });
+        
         html += `</div></div>`;
         if (resultObj.groupReason) { html += `<div class="text-[10px] text-stone-500 font-medium bg-stone-50 px-2 py-1.5 rounded border border-stone-100 flex items-center gap-1"><span class="text-sm">💡</span> ${resultObj.groupReason}</div>`; }
         html += `</div>`;
         container.innerHTML += html;
     },
-    populateYearSelect() { const yearSelect = document.getElementById('search-year'); for (let y = 2021; y <= 2026; y++) { const opt = document.createElement('option'); opt.value = y; opt.innerText = `${y} 年`; yearSelect.appendChild(opt); } },
-    
-    // 新增：初始化月份下拉選單
-    populateMonthSelect() { 
-        const monthSelect = document.getElementById('search-month'); 
-        for (let m = 1; m <= 12; m++) { 
-            const opt = document.createElement('option'); 
-            opt.value = m; 
-            opt.innerText = `${m} 月`; 
-            monthSelect.appendChild(opt); 
-        } 
-    },
-
-    // 修正：重置功能需清空 DOM 數值
+    populateYearSelect() { const yearSelect = document.getElementById('search-year'); for (let y = 2021; y <= 2026; y++) { const opt = document.createElement('option'); opt.value = y; opt.innerText = `${y}`; yearSelect.appendChild(opt); } },
+    populateMonthSelect() { const monthSelect = document.getElementById('search-month'); for (let m = 1; m <= 12; m++) { const opt = document.createElement('option'); opt.value = m; opt.innerText = `${m} 月`; monthSelect.appendChild(opt); } },
     resetFilter() { 
         this.state.filterPeriod = ""; 
         this.state.filterYear = ""; 
         this.state.filterMonth = ""; 
-        
-        // 清空 DOM 元素
-        const pInput = document.getElementById('search-period');
-        if(pInput) pInput.value = "";
+        const pInput = document.getElementById('search-period'); if(pInput) pInput.value = "";
         document.getElementById('search-year').value = ""; 
         document.getElementById('search-month').value = ""; 
-        
         this.updateDashboard(); 
     },
-    
-    // 6. 歷史紀錄切換 - 文字動態變更
     toggleHistory() {
         const c = document.getElementById('history-container');
         const a = document.getElementById('history-arrow');
