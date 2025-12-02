@@ -39,7 +39,7 @@
         .game-tab-btn { 
             padding: 10px 24px; 
             border-radius: 9999px; 
-            font-size: 1.125rem; /* 18px (與學派標題一致) */
+            font-size: 1.125rem; 
             font-weight: 700; 
             transition: all 0.2s ease; 
             cursor: pointer; 
@@ -64,11 +64,11 @@
         
         .school-stat { color: #475569; } .school-pattern { color: #7c3aed; } .school-balance { color: #059669; } .school-ai { color: #d97706; } .school-wuxing { color: #be185d; }
         
-        /* 年度熱門 (大球 56px) */
+        /* 球號尺寸設定 */
         .ball { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 24px; position: relative; z-index: 1; box-shadow: 2px 3px 6px rgba(0,0,0,0.1); }
         .ball-hot { background: #e11d48; color: #fffaf0; } 
         
-        /* 歷史紀錄 & 推薦組合 (中球 42px) */
+        /* 歷史紀錄 & 推薦組合 (中型 42px - 您指定的尺寸) */
         .ball-sm { width: 42px; height: 42px; font-size: 18px; border-radius: 50%; background: #fff; color: #57534e; border: 1px solid #d6d3d1; box-shadow: 1px 2px 4px rgba(0,0,0,0.05); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 4px; }
         .ball-special { border-color: #f43f5e; color: #f43f5e; background: #fff1f2; }
         
@@ -97,10 +97,9 @@
 </head>
 <body class="p-4 md:p-6 min-h-screen flex flex-col font-medium text-sm">
 
-    <!-- 版面寬度 6xl -->
     <div class="max-w-6xl mx-auto w-full relative">
         
-        <!-- Header 絕對置中 -->
+        <!-- Header -->
         <div class="relative mb-8 flex justify-center items-center h-20">
             <div class="text-center">
                 <h1 class="text-3xl md:text-4xl font-black text-stone-800 tracking-wider">台彩全能分析儀</h1>
@@ -114,10 +113,8 @@
 
         <!-- Dashboard -->
         <div id="dashboard-area" class="bg-white rounded-3xl p-6 md:p-8 shadow-lg border border-stone-100 mb-8 animate-[fadeIn_0.5s_ease-out]">
-            
-            <!-- 上半部：核心操作區 (強制橫向) -->
             <div class="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8 pb-6">
-                <!-- 1. 左側：標題 -->
+                <!-- 1. 左側 -->
                 <div class="flex-shrink-0 flex items-center gap-4">
                     <span class="text-5xl">🎯</span>
                     <div class="flex flex-col">
@@ -125,11 +122,11 @@
                         <span class="text-stone-400 text-sm font-bold tracking-widest mt-1" id="latest-period">--期</span>
                     </div>
                 </div>
-                <!-- 2. 中間：遊戲按鈕 -->
+                <!-- 2. 中間 -->
                 <div class="flex-1 flex justify-start lg:justify-center w-full lg:w-auto overflow-x-auto hide-scrollbar px-2">
                     <div class="flex flex-nowrap gap-3" id="game-btn-container"></div>
                 </div>
-                <!-- 3. 右側：篩選器 -->
+                <!-- 3. 右側 -->
                 <div class="flex-shrink-0 flex items-center gap-2">
                     <div class="bg-stone-50 p-1.5 rounded-xl flex items-center gap-1.5 border border-stone-100">
                         <select id="search-year" class="custom-input custom-select w-20 rounded-lg px-2 py-1.5 text-xs font-bold cursor-pointer"><option value="">年份</option></select>
@@ -139,19 +136,16 @@
                 </div>
             </div>
 
-            <!-- 下半部：底部資訊列 & 子玩法區 -->
+            <!-- 底部資訊列 -->
             <div class="pt-4 border-t border-stone-100 flex flex-wrap md:flex-nowrap justify-between items-center text-sm font-bold text-stone-400 gap-4 h-14 min-h-[3.5rem]">
-                <!-- 左下：系統狀態 (字體加大 text-sm) -->
                 <div class="flex items-center gap-2 min-w-max">
                     <span id="system-status-icon" class="w-2 h-2 rounded-full bg-green-500"></span>
                     <span id="system-status-text" class="text-green-600">系統連線正常</span>
                 </div>
-                <!-- 中間：子玩法 -->
                 <div id="submode-area" class="hidden flex-1 flex justify-center items-center gap-3">
                     <div class="flex gap-2" id="submode-tabs"></div>
                     <button onclick="app.toggleRules()" class="text-stone-400 hover:text-stone-600 underline whitespace-nowrap">規則說明</button>
                 </div>
-                <!-- 右下：資料庫資訊 (字體加大 text-sm) -->
                 <div class="flex gap-4 min-w-max">
                     <span>資料庫：<span id="total-count" class="text-stone-600">0</span> 期</span>
                     <span>更新：<span id="last-update-time">--</span></span>
@@ -164,7 +158,7 @@
             <div id="game-rules-content" class="hidden mt-3 p-4 bg-stone-50 rounded-xl border border-stone-100 text-xs text-stone-600 leading-relaxed"></div>
         </div>
 
-        <!-- 熱門統計 (顏色鮮艷) -->
+        <!-- 熱門統計 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="stat-box">
                 <h4 class="font-bold text-rose-500 text-sm uppercase mb-3 flex justify-between tracking-widest">🔥 年度熱門 <span class="text-rose-300">Year</span></h4>
@@ -202,12 +196,10 @@
             </div>
         </div>
 
-        <!-- 戰術流派與推薦 -->
+        <!-- 戰術流派 -->
         <div id="strategy-area" class="mb-12">
             <div class="title-divider mb-8">🧠 戰術流派</div>
-            
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-                <!-- 標題加大至 text-lg (18px)，描述加大至 text-sm (14px) -->
                 <div class="school-card school-balance p-4 relative" onclick="app.selectSchool('balance')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">⚖️</div><h4 class="font-bold text-lg">平衡學派</h4></div><p class="text-sm opacity-70">結構防守</p></div>
                 <div class="school-card school-stat p-4 relative" onclick="app.selectSchool('stat')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">📊</div><h4 class="font-bold text-lg">統計學派</h4></div><p class="text-sm opacity-70">數據熱度</p></div>
                 <div class="school-card school-pattern p-4 relative" onclick="app.selectSchool('pattern')"><div class="flex items-center gap-1 mb-1"><div class="text-xl">🔗</div><h4 class="font-bold text-lg">關聯學派</h4></div><p class="text-sm opacity-70">拖牌版路</p></div>
@@ -217,33 +209,25 @@
 
             <div class="bg-white rounded-2xl p-6 shadow-lg border border-stone-100 relative overflow-hidden">
                 <div id="school-description" class="relative z-10 mb-6 text-sm leading-relaxed text-stone-600 bg-stone-50 p-5 rounded-xl border-l-4 border-stone-400"></div>
-                
-                <!-- 五行運勢控制區 (加大間距 mt-8 與文字 text-base) -->
                 <div id="wuxing-options" class="hidden relative z-10 mb-6 mt-8 bg-pink-50/50 p-4 rounded-xl border border-pink-100">
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-center">
                             <label class="text-base font-bold text-pink-700 whitespace-nowrap">運勢主角</label>
-                            <select id="profile-select" onchange="app.onProfileChange()" class="custom-select flex-1 bg-white border border-pink-200 rounded-lg px-3 py-2 text-base font-bold text-stone-700 cursor-pointer">
-                                <option value="">請新增...</option>
-                            </select>
+                            <select id="profile-select" onchange="app.onProfileChange()" class="custom-select flex-1 bg-white border border-pink-200 rounded-lg px-3 py-2 text-base font-bold text-stone-700 cursor-pointer"><option value="">請新增...</option></select>
                             <button onclick="app.deleteCurrentProfile()" class="bg-white text-red-400 px-3 py-2 rounded-lg hover:bg-red-50 border border-pink-200 text-base">🗑️</button>
                         </div>
-                        
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-pink-100"><input type="checkbox" id="check-purple" class="accent-pink-600" checked><span class="text-base font-bold text-stone-600">紫微</span></label>
                             <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-pink-100"><input type="checkbox" id="check-astro" class="accent-pink-600" checked><span class="text-base font-bold text-stone-600">星盤</span></label>
                             <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-pink-100"><input type="checkbox" id="check-name" class="accent-pink-600" checked><span class="text-base font-bold text-stone-600">姓名</span></label>
                             <label class="flex items-center gap-2 cursor-pointer bg-white p-2 rounded-lg border border-pink-100"><input type="checkbox" id="check-zodiac" class="accent-pink-600" checked><span class="text-base font-bold text-stone-600">生肖</span></label>
                         </div>
-
                         <div id="ai-fortune-section" class="hidden border-t border-pink-200 pt-3">
                             <div class="flex items-center justify-between mb-2">
                                 <h4 class="text-pink-800 font-bold text-base">🔮 AI 流年解析</h4>
                                 <div class="flex gap-2">
                                     <button onclick="app.clearFortune()" id="btn-clear-ai" class="hidden text-sm text-stone-400 underline hover:text-pink-600">清除</button>
-                                    <button onclick="app.generateAIFortune()" id="btn-calc-ai" class="bg-pink-600 text-white px-3 py-1.5 rounded-lg text-base font-bold hover:bg-pink-700 transition flex items-center gap-1 shadow-sm">
-                                        ✨ 大師批流年
-                                    </button>
+                                    <button onclick="app.generateAIFortune()" id="btn-calc-ai" class="bg-pink-600 text-white px-3 py-1.5 rounded-lg text-base font-bold hover:bg-pink-700 transition flex items-center gap-1 shadow-sm">✨ 大師批流年</button>
                                 </div>
                             </div>
                             <div id="ai-result-display" class="hidden bg-white p-3 rounded-lg border border-pink-100 text-sm text-stone-600 leading-relaxed shadow-inner max-h-32 overflow-y-auto custom-scrollbar"></div>
@@ -259,6 +243,8 @@
                             <label class="cursor-pointer"><input type="radio" name="count" value="1" class="peer hidden" checked><span class="block px-4 py-1.5 rounded-lg bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-xs font-bold transition shadow-sm border border-transparent peer-checked:border-stone-800">1</span></label>
                             <label class="cursor-pointer"><input type="radio" name="count" value="3" class="peer hidden"><span class="block px-4 py-1.5 rounded-lg bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-xs font-bold transition shadow-sm border border-transparent peer-checked:border-stone-800">3</span></label>
                             <label class="cursor-pointer"><input type="radio" name="count" value="5" class="peer hidden"><span class="block px-4 py-1.5 rounded-lg bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-xs font-bold transition shadow-sm border border-transparent peer-checked:border-stone-800">5</span></label>
+                            <!-- 新增：包牌按鈕 -->
+                            <label class="cursor-pointer"><input type="radio" name="count" value="pack" class="peer hidden"><span class="block px-4 py-1.5 rounded-lg bg-white text-stone-400 peer-checked:bg-stone-800 peer-checked:text-white text-xs font-bold transition shadow-sm border border-transparent peer-checked:border-stone-800">🛍️ 包牌</span></label>
                         </div>
                     </div>
                     <button onclick="app.runPrediction()" class="w-full md:w-auto bg-stone-800 hover:bg-stone-700 text-stone-50 px-12 py-3 rounded-xl font-bold text-lg shadow-lg shadow-stone-200 active:scale-95 transition-all flex items-center justify-center gap-2">
@@ -276,7 +262,7 @@
         <div class="text-center mt-8 text-[10px] text-stone-300 font-bold pb-4">DESIGNED FOR LOTTERY ANALYSIS</div>
     </div>
 
-    <!-- 個人檔案 Modal (保持不變) -->
+    <!-- 個人檔案 Modal -->
     <div id="profile-modal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-95 opacity-0" id="profile-modal-content">
             <div class="bg-stone-900 px-5 py-4 flex justify-between items-center">
