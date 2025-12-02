@@ -64,9 +64,11 @@
         
         .school-stat { color: #475569; } .school-pattern { color: #7c3aed; } .school-balance { color: #059669; } .school-ai { color: #d97706; } .school-wuxing { color: #be185d; }
         
-        .ball { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; position: relative; z-index: 1; box-shadow: 2px 3px 6px rgba(0,0,0,0.1); }
+        /* 修改：加大基礎球號尺寸，讓熱門統計區塊(經過縮放後)看起來更大 */
+        .ball { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 24px; position: relative; z-index: 1; box-shadow: 2px 3px 6px rgba(0,0,0,0.1); }
         .ball-hot { background: #e11d48; color: #fffaf0; } 
-        .ball-sm { width: 32px; height: 32px; font-size: 14px; border-radius: 50%; background: #fff; color: #57534e; border: 1px solid #d6d3d1; box-shadow: 1px 2px 4px rgba(0,0,0,0.05); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 4px; }
+        /* 修改：加大列表小球尺寸，使其與熱門統計區塊一致 (約 42px) */
+        .ball-sm { width: 42px; height: 42px; font-size: 18px; border-radius: 50%; background: #fff; color: #57534e; border: 1px solid #d6d3d1; box-shadow: 1px 2px 4px rgba(0,0,0,0.05); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 4px; }
         .ball-special { border-color: #f43f5e; color: #f43f5e; background: #fff1f2; }
         .stat-box { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); border: 1px solid #f0ebe4; }
         
@@ -172,11 +174,11 @@
             <div id="game-rules-content" class="hidden mt-3 p-4 bg-stone-50 rounded-xl border border-stone-100 text-xs text-stone-600 leading-relaxed"></div>
         </div>
 
-        <!-- 熱門統計 -->
+        <!-- 熱門統計 (修改：文字改為 text-sm 加大標題) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="stat-box"><h4 class="font-bold text-stone-400 text-[10px] uppercase mb-3 flex justify-between tracking-widest">🔥 年度熱門 <span class="text-stone-300">Year</span></h4><div id="stat-year" class="flex flex-wrap gap-2 justify-center"></div></div>
-            <div class="stat-box"><h4 class="font-bold text-stone-400 text-[10px] uppercase mb-3 flex justify-between tracking-widest">📅 本月熱門 <span class="text-stone-300">Month</span></h4><div id="stat-month" class="flex flex-wrap gap-2 justify-center"></div></div>
-            <div class="stat-box"><h4 class="font-bold text-stone-400 text-[10px] uppercase mb-3 flex justify-between tracking-widest">⚡ 近期熱勢 <span class="text-stone-300">Trend</span></h4><div id="stat-recent" class="flex flex-wrap gap-2 justify-center"></div></div>
+            <div class="stat-box"><h4 class="font-bold text-stone-400 text-sm uppercase mb-3 flex justify-between tracking-widest">🔥 年度熱門 <span class="text-stone-300">Year</span></h4><div id="stat-year" class="flex flex-wrap gap-2 justify-center"></div></div>
+            <div class="stat-box"><h4 class="font-bold text-stone-400 text-sm uppercase mb-3 flex justify-between tracking-widest">📅 本月熱門 <span class="text-stone-300">Month</span></h4><div id="stat-month" class="flex flex-wrap gap-2 justify-center"></div></div>
+            <div class="stat-box"><h4 class="font-bold text-stone-400 text-sm uppercase mb-3 flex justify-between tracking-widest">⚡ 近期熱勢 <span class="text-stone-300">Trend</span></h4><div id="stat-recent" class="flex flex-wrap gap-2 justify-center"></div></div>
         </div>
 
         <!-- 歷史紀錄 -->
@@ -190,11 +192,12 @@
             </div>
             <div id="history-container" class="max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
                 <div class="overflow-x-auto p-1">
+                    <!-- 修改：文字改為 text-sm 加大表格內容 -->
                     <table class="w-full text-left">
-                        <thead class="text-xs font-bold text-stone-400 uppercase">
+                        <thead class="text-sm font-bold text-stone-400 uppercase">
                             <tr><th class="px-5 py-3 bg-white sticky top-0 w-32">期別</th><th class="px-5 py-3 bg-white sticky top-0">號碼</th></tr>
                         </thead>
-                        <tbody id="history-list" class="divide-y divide-stone-100 text-xs"></tbody>
+                        <tbody id="history-list" class="divide-y divide-stone-100 text-sm"></tbody>
                     </table>
                 </div>
                 <div id="no-result-msg" class="hidden text-center py-8 text-stone-400 font-bold text-xs">無符合資料</div>
