@@ -86,32 +86,129 @@ export const GAME_CONFIG = {
     },
     ORDER: ['大樂透', '威力彩', '今彩539', '3星彩', '4星彩'],
     
-    // 學派說明
+    // 學派說明 (包含開合詳細資訊)
     SCHOOLS: {
         balance: { 
             color: "border-school-balance", 
             title: "結構平衡學派", 
-            desc: `<div><span class="font-bold text-school-balance block mb-1 text-sm">核心策略：</span><p class="text-justify leading-relaxed text-stone-600 text-sm">基於常態分佈理論。計算AC值(複雜度)與和值區間，排除全奇/全偶等極端組合，專攻機率最高的「黃金結構」。</p></div>` 
+            desc: `
+                <div>
+                    <span class="font-bold text-school-balance block mb-1 text-sm">核心策略：</span>
+                    <p class="text-justify leading-relaxed text-stone-600 text-sm">基於常態分佈理論。計算AC值(複雜度)與和值區間，排除全奇/全偶等極端組合，專攻機率最高的「黃金結構」。</p>
+                </div>
+                <details class="mt-3 group">
+                    <summary class="cursor-pointer font-bold text-school-balance text-sm list-none flex items-center gap-2 transition-all hover:opacity-80">
+                        <span>▶ 混合算法 (Logic Mix)：</span>
+                    </summary>
+                    <div class="mt-2 pl-3 text-xs text-stone-500 space-y-2 border-l-2 border-school-balance">
+                        <p>1. 試誤過濾法 (Trial & Error)：系統不直接選號，而是先隨機生成大量組合，再透過濾網篩選。</p>
+                        <p>2. AC 值 (Arithmetic Complexity) 檢測：(針對樂透型) 計算號碼組中所有數字兩兩相減的「差值數」。程式碼設定門檻為 AC >= 4，確保選出的號碼結構夠複雜，避免簡單排列。</p>
+                        <p>3. 黃金和值 (Golden Sum)：(針對 3星/4星 組彩) 計算數字總和，強制鎖定在 10 ~ 20 這個機率分佈最高的區間。</p>
+                        <p>4. 屬性標記：分析每個號碼的數學屬性（大小、奇偶）。</p>
+                        <div class="mt-2 pt-2 border-t border-stone-200">
+                            <span class="font-bold text-red-500">🔴 證據顯示 (Tag)：</span>
+                            <p class="mt-1">大號/奇數、小號/偶數：直接標示該號碼在平衡結構中的角色。<br>AC值 6 優化：(組合理由) 顯示該組牌的複雜度指標。</p>
+                        </div>
+                    </div>
+                </details>
+            ` 
         },
         stat: { 
             color: "border-school-stat", 
             title: "統計學派", 
-            desc: `<div><span class="font-bold text-school-stat block mb-1 text-sm">核心策略：</span><p class="text-justify leading-relaxed text-stone-600 text-sm">大數據慣性分析。加入「012路」分析與「極限遺漏」回補機制，在熱號恆熱與冷號反彈間取得最佳期望值。</p></div>` 
+            desc: `
+                <div>
+                    <span class="font-bold text-school-stat block mb-1 text-sm">核心策略：</span>
+                    <p class="text-justify leading-relaxed text-stone-600 text-sm">大數據慣性分析。加入「極限遺漏」回補機制，在熱號恆熱與冷號反彈間取得最佳期望值。</p>
+                </div>
+                <details class="mt-3 group">
+                    <summary class="cursor-pointer font-bold text-school-stat text-sm list-none flex items-center gap-2 transition-all hover:opacity-80">
+                        <span>▶ 混合算法 (Logic Mix)：</span>
+                    </summary>
+                    <div class="mt-2 pl-3 text-xs text-stone-500 space-y-2 border-l-2 border-school-stat">
+                        <p>1. 頻率累加演算法：遍歷歷史資料庫，計算每個號碼的出現次數。基礎權重 10，每出現一次 +10。</p>
+                        <p>2. 遺漏值 (Missing Value) 追蹤：計算每個號碼距離上次開出已經過了多少期。</p>
+                        <p>3. 卜瓦松檢定概念 (Poisson-inspired)：設定具體閥值（近30期出現 > 5 次判定為熱；遺漏 > 15 期判定為冷），模擬顯著性檢定。</p>
+                        <p>4. 極限回補機制 (Extreme Rebound)：(針對威力彩第二區) 強制給予隨機冷號極高權重 (500分)，模擬「賭冷門牌反彈」的策略。</p>
+                        <div class="mt-2 pt-2 border-t border-stone-200">
+                            <span class="font-bold text-red-500">🔴 證據顯示 (Tag)：</span>
+                            <p class="mt-1">近30期8次：(熱號) 用具體數據證明其熱度。<br>遺漏24期：(冷號) 用具體數據證明其回補機率。<br>常態選號：(中性) 符合平均機率的號碼。</p>
+                        </div>
+                    </div>
+                </details>
+            ` 
         },
         pattern: { 
             color: "border-school-pattern", 
             title: "關聯學派", 
-            desc: `<div><span class="font-bold text-school-pattern block mb-1 text-sm">核心策略：</span><p class="text-justify leading-relaxed text-stone-600 text-sm">捕捉號碼間的隱形連結。分析上期獎號的「拖牌效應」與「尾數連動」，預測版路的下一個落點。</p></div>` 
+            desc: `
+                <div>
+                    <span class="font-bold text-school-pattern block mb-1 text-sm">核心策略：</span>
+                    <p class="text-justify leading-relaxed text-stone-600 text-sm">捕捉號碼間的隱形連結。分析上期獎號的「拖牌效應」與「尾數連動」，預測版路的下一個落點。</p>
+                </div>
+                <details class="mt-3 group">
+                    <summary class="cursor-pointer font-bold text-school-pattern text-sm list-none flex items-center gap-2 transition-all hover:opacity-80">
+                        <span>▶ 混合算法 (Logic Mix)：</span>
+                    </summary>
+                    <div class="mt-2 pl-3 text-xs text-stone-500 space-y-2 border-l-2 border-school-pattern">
+                        <p>1. 條件機率矩陣：鎖定「上一期 (Last Draw)」號碼作為種子。</p>
+                        <p>2. 拖牌權重 (Drag Weight)：若某號碼是上一期的開獎號，權重 +20 (賭連莊)。</p>
+                        <p>3. 鄰號效應 (Neighbor Effect)：若某號碼是上一期號碼的左右鄰居 (如上期開 05，則 04, 06 加分)，權重 +15。</p>
+                        <p>4. 尾數群聚分析：分析號碼的個位數 (Mod 10)，判斷是否與上期尾數相同。</p>
+                        <div class="mt-2 pt-2 border-t border-stone-200">
+                            <span class="font-bold text-red-500">🔴 證據顯示 (Tag)：</span>
+                            <p class="mt-1">連莊強勢：直指該號碼為上期重覆號。<br>05鄰號：明確指出是因為鄰近 05 而被選中。<br>3尾群聚：指出該號碼符合特定的尾數規律。</p>
+                        </div>
+                    </div>
+                </details>
+            ` 
         },
         ai: { 
             color: "border-school-ai", 
             title: "AI 學派", 
-            desc: `<div><span class="font-bold text-school-ai block mb-1 text-sm">核心策略：</span><p class="text-justify leading-relaxed text-stone-600 text-sm">時間序列加權運算。針對3星彩加入「路單追蹤」(Trend Follow)，捕捉單雙/大小的連續趨勢與折返點。</p></div>` 
+            desc: `
+                <div>
+                    <span class="font-bold text-school-ai block mb-1 text-sm">核心策略：</span>
+                    <p class="text-justify leading-relaxed text-stone-600 text-sm">時間序列加權運算。將開獎視為時間軸，距離現在越近的數據影響力越大。</p>
+                </div>
+                <details class="mt-3 group">
+                    <summary class="cursor-pointer font-bold text-school-ai text-sm list-none flex items-center gap-2 transition-all hover:opacity-80">
+                        <span>▶ 混合算法 (Logic Mix)：</span>
+                    </summary>
+                    <div class="mt-2 pl-3 text-xs text-stone-500 space-y-2 border-l-2 border-school-ai">
+                        <p>1. 時間衰減函數 (Time Decay)：只取近 10~20 期資料。權重公式為 20 - index (越近分數越高，越遠分數越低)，模擬神經網路對近期特徵的敏感度。</p>
+                        <p>2. 歸一化評分 (Normalization)：將計算出的權重分數轉換為 0-100 的「動能/趨勢分」，讓使用者能直觀比較強弱。</p>
+                        <div class="mt-2 pt-2 border-t border-stone-200">
+                            <span class="font-bold text-red-500">🔴 證據顯示 (Tag)：</span>
+                            <p class="mt-1">趨勢分98：直接量化該號碼在近期趨勢中的強度 (滿分100)。</p>
+                        </div>
+                    </div>
+                </details>
+            ` 
         },
         wuxing: {
             color: "border-school-wuxing",
             title: "五行生肖學派",
-            desc: `<div><span class="font-bold text-pink-700 block mb-1 text-sm">核心策略：</span><p class="text-justify leading-relaxed text-stone-600 text-sm">AI 宗師級命理運算。將您的紫微斗數與星盤資料，結合當日天干地支與流年財位，推演專屬幸運磁場。</p></div>`
+            desc: `
+                <div>
+                    <span class="font-bold text-school-wuxing block mb-1 text-sm">核心策略：</span>
+                    <p class="text-justify leading-relaxed text-stone-600 text-sm">AI 宗師級命理運算。將科學無法解釋的「個人運勢」納入參數。</p>
+                </div>
+                <details class="mt-3 group">
+                    <summary class="cursor-pointer font-bold text-school-wuxing text-sm list-none flex items-center gap-2 transition-all hover:opacity-80">
+                        <span>▶ 混合算法 (Logic Mix)：</span>
+                    </summary>
+                    <div class="mt-2 pl-3 text-xs text-stone-500 space-y-2 border-l-2 border-school-wuxing">
+                        <p>1. 模組運算 (Modulo Arithmetic)：利用 num % 5 的餘數來將數字分類為五行屬性 (金木水火土)。</p>
+                        <p>2. 隨機加權 (Randomization)：在程式選號階段保留隨機性，模擬「機運」的不確定性。</p>
+                        <p>3. 標籤映射：將餘數結果映射為命理術語。</p>
+                        <div class="mt-2 pt-2 border-t border-stone-200">
+                            <span class="font-bold text-red-500">🔴 證據顯示 (Tag)：</span>
+                            <p class="mt-1">屬火財位：(餘數1)<br>屬金貴人：(餘數2)<br>五行選號：(其他餘數)</p>
+                        </div>
+                    </div>
+                </details>
+            `
         }
     }
 };
