@@ -192,19 +192,20 @@ export const GAME_CONFIG = {
             desc: `
                 <div>
                     <span class="font-bold text-school-wuxing block mb-1 text-sm">核心策略：</span>
-                    <p class="text-justify leading-relaxed text-stone-600 text-sm">AI 宗師級命理運算。將科學無法解釋的「個人運勢」納入參數。</p>
+                    <p class="text-justify leading-relaxed text-stone-600 text-sm">AI 命理轉譯引擎。不再使用通用公式，而是由 AI 擔任「雲端命理師」，解析您的紫微命盤與流年飛星，將玄學能量轉譯為數學權重。</p>
                 </div>
                 <details class="mt-3 group">
                     <summary class="cursor-pointer font-bold text-school-wuxing text-sm list-none flex items-center gap-2 transition-all hover:opacity-80">
                         <span>▶ 混合算法 (Logic Mix)：</span>
                     </summary>
                     <div class="mt-2 pl-3 text-xs text-stone-500 space-y-2 border-l-2 border-school-wuxing">
-                        <p>1. 模組運算 (Modulo Arithmetic)：利用 num % 5 的餘數來將數字分類為五行屬性 (金木水火土)。</p>
-                        <p>2. 隨機加權 (Randomization)：在程式選號階段保留隨機性，模擬「機運」的不確定性。</p>
-                        <p>3. 標籤映射：將餘數結果映射為命理術語。</p>
+                        <p>1. AI 命盤結構解析：系統讀取使用者 Profile 中的星曜分布，判斷命宮、財帛宮與田宅宮的先天強弱。</p>
+                        <p>2. 流年飛星推演：自動抓取當下年份（如 2025 乙巳年），計算流年四化（祿、權、科、忌）對財位的引動。</p>
+                        <p>3. 河圖洛書數值化：將「星曜屬性」（如武曲屬金、貪狼屬木）依據河圖洛書原理轉換為樂透選號。</p>
+                        <p>4. 趨吉避凶權重：遇「化祿」給予極高權重，遇「化忌」則動態排除或視為「破財擋災」的特殊選號。</p>
                         <div class="mt-2 pt-2 border-t border-stone-200">
                             <span class="font-bold text-red-500">🔴 證據顯示 (Tag)：</span>
-                            <p class="mt-1">屬火財位：(餘數1)<br>屬金貴人：(餘數2)<br>五行選號：(其他餘數)</p>
+                            <p class="mt-1">武曲化祿：(正財星)<br>貪狼偏財：(機會財)<br>流年財星：(時間運)</p>
                         </div>
                     </div>
                 </details>
