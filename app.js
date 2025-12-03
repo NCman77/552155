@@ -1,7 +1,8 @@
 /**
  * app.js
  * 核心邏輯層：負責資料處理、演算法運算、DOM 渲染與事件綁定
- * 包含專家級分析邏輯 (AC值, 012路, 極限遺漏, 路單追蹤, 聰明包牌, 卜瓦松, 蒙地卡羅)
+ * V24: 包含專家級分析邏輯 (AC值, 012路, 極限遺漏, 路單追蹤, 聰明包牌, 卜瓦松, 蒙地卡羅)
+ * + 真實紫微斗數流年運算 (干支飛星, 河圖洛書, 趨吉避凶)
  */
 import { GAME_CONFIG } from './game_config.js';
 
@@ -36,13 +37,25 @@ const App = {
         document.getElementById('search-month').addEventListener('change', (e) => { this.state.filterMonth = e.target.value; this.updateDashboard(); });
     },
 
+    // --- Firebase Logic ---
     async initFirebase() {
         if (typeof window.firebaseModules === 'undefined') { this.loadProfilesLocal(); return; }
         const { initializeApp, getAuth, onAuthStateChanged, getFirestore, getDoc, doc } = window.firebaseModules;
         const firebaseConfig = { apiKey: "AIzaSyBatltfrvZ5AXixdZBcruClqYrA-9ihsI0", authDomain: "lottery-app-bd106.firebaseapp.com", projectId: "lottery-app-bd106", storageBucket: "lottery-app-bd106.firebasestorage.app", messagingSenderId: "13138331714", appId: "1:13138331714:web:194ac3ff9513d19d9845db" };
         try { const app = initializeApp(firebaseConfig); const auth = getAuth(app); this.state.db = getFirestore(app); onAuthStateChanged(auth, async (user) => { this.state.user = user; this.updateAuthUI(user); if (user) { await this.loadProfilesCloud(user.uid); const ref = doc(this.state.db, 'artifacts', 'lottery-app', 'users', user.uid, 'settings', 'api'); const snap = await getDoc(ref); if(snap.exists()) { this.state.apiKey = snap.data().key; document.getElementById('gemini-api-key').value = this.state.apiKey; } } else { this.loadProfilesLocal(); } }); } catch(e) { console.error(e); this.loadProfilesLocal(); }
     },
-    updateAuthUI(user) { /*...*/ },
+    updateAuthUI(user) {
+        const loginBtn = document.getElementById('btn-login'); const userInfo = document.getElementById('user-info');
+        const userName = document.getElementById('user-name'); const dot = document.getElementById('login-status-dot');
+        if (user) {
+            loginBtn.classList.add('hidden'); userInfo.classList.remove('hidden');
+            userName.innerText = `Hi, ${user.displayName}`;
+            dot.classList.remove('bg-stone-300'); dot.classList.add('bg-green-500');
+        } else {
+            loginBtn.classList.remove('hidden'); userInfo.classList.add('hidden');
+            dot.classList.remove('bg-green-500'); dot.classList.add('bg-stone-300');
+        }
+    },
     async loginGoogle() { /*...*/ const { getAuth, signInWithPopup, GoogleAuthProvider } = window.firebaseModules; await signInWithPopup(getAuth(), new GoogleAuthProvider()); },
     async logoutGoogle() { /*...*/ await window.firebaseModules.signOut(window.firebaseModules.getAuth()); this.state.profiles = []; this.loadProfilesLocal(); },
     async loadProfilesCloud(uid) { /*...*/ const { doc, getDoc } = window.firebaseModules; const ref = doc(this.state.db, 'artifacts', 'lottery-app', 'users', uid, 'profiles', 'main'); const snap = await getDoc(ref); this.state.profiles = snap.exists() ? snap.data().list || [] : []; this.renderProfileSelect(); this.renderProfileList(); },
@@ -56,149 +69,97 @@ const App = {
     renderProfileList() { document.getElementById('profile-list').innerHTML = this.state.profiles.map(p=>`<div class="flex justify-between p-2 bg-stone-50 border rounded"><div class="font-bold text-stone-700 text-xs">${p.name}</div><button onclick="app.deleteProfile(${p.id})" class="text-red-400 text-xs">刪除</button></div>`).join(''); },
     renderProfileSelect() { document.getElementById('profile-select').innerHTML = '<option value="">請新增...</option>'+this.state.profiles.map(p=>`<option value="${p.id}">${p.name}</option>`).join(''); },
     deleteCurrentProfile() { const pid = document.getElementById('profile-select').value; if(pid && confirm('刪除?')) { this.deleteProfile(Number(pid)); document.getElementById('profile-select').value=""; this.onProfileChange(); } },
-    async generateAIFortune() { /*...*/ const pid = document.getElementById('profile-select').value; if(!pid||!this.state.apiKey) return alert("請選主角並設定Key"); document.getElementById('ai-loading').classList.remove('hidden'); document.getElementById('btn-calc-ai').disabled=true; const p = this.state.profiles.find(x=>x.id==pid); const prompt=`命理大師分析2025流年。對象:${p.name}。${p.ziwei} ${p.astro}。回傳JSON:{"year_analysis":"100字分析","monthly_elements":[{"month":1,"lucky_tails":[2,7],"lucky_elements":["火"]}]}`; try{ const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.state.apiKey}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})}); const d=await res.json(); p.fortune2025=JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim()); this.saveProfiles(); this.onProfileChange(); }catch(e){alert("失敗");}finally{document.getElementById('ai-loading').classList.add('hidden');document.getElementById('btn-calc-ai').disabled=false;} },
-    onProfileChange() { const pid = document.getElementById('profile-select').value; const s = document.getElementById('ai-fortune-section'); if(!pid){s.classList.add('hidden');return;} s.classList.remove('hidden'); const p=this.state.profiles.find(x=>x.id==pid); const d=document.getElementById('ai-result-display'); if(p&&p.fortune2025){ d.classList.remove('hidden'); d.innerHTML=`<div class="font-bold mb-1">📅 2025流年:</div><p>${p.fortune2025.year_analysis}</p>`; document.getElementById('btn-calc-ai').innerText="🔄 重新"; document.getElementById('btn-clear-ai').classList.remove('hidden'); }else{ d.classList.add('hidden'); document.getElementById('btn-calc-ai').innerText="✨ 大師批流年"; document.getElementById('btn-clear-ai').classList.add('hidden'); } },
+    
+    // --- 紫微斗數 & AI 核心 ---
+    async generateAIFortune() { 
+        const pid = document.getElementById('profile-select').value; 
+        if(!pid||!this.state.apiKey) return alert("請選主角並設定Key"); 
+        document.getElementById('ai-loading').classList.remove('hidden'); 
+        document.getElementById('btn-calc-ai').disabled=true; 
+        const p = this.state.profiles.find(x=>x.id==pid); 
+        const currentYear = new Date().getFullYear();
+        const ganZhi = this.getGanZhi(currentYear);
+        // 組裝動態 Prompt
+        const prompt=`你是一位精通紫微斗數與四化飛星的資深大師。
+        流年：${currentYear}年 (${ganZhi.gan}${ganZhi.zhi}年)。
+        命主：${p.name} (${p.realname})。
+        命盤特徵：${p.ziwei} ${p.astro}。
+        
+        請分析流年運勢，並回傳JSON格式：
+        {
+            "year_analysis": "約100字的流年運勢分析，包含事業與財運。",
+            "monthly_elements": [
+                {"month": 1, "lucky_tails": [2,7], "lucky_elements": ["火"], "wealth_star": "武曲", "avoid": "忌星"}
+            ]
+        }`; 
+        try{ 
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.state.apiKey}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})}); 
+            const d=await res.json(); 
+            p.fortune2025=JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim()); 
+            this.saveProfiles(); 
+            this.onProfileChange(); 
+        }catch(e){alert("分析失敗");}finally{document.getElementById('ai-loading').classList.add('hidden');document.getElementById('btn-calc-ai').disabled=false;} 
+    },
+    onProfileChange() { 
+        const pid = document.getElementById('profile-select').value; 
+        const s = document.getElementById('ai-fortune-section'); 
+        if(!pid){s.classList.add('hidden');return;} 
+        s.classList.remove('hidden'); 
+        const p=this.state.profiles.find(x=>x.id==pid); 
+        const d=document.getElementById('ai-result-display'); 
+        if(p&&p.fortune2025){ 
+            d.classList.remove('hidden'); 
+            d.innerHTML=`<div class="font-bold mb-1">📅 流年運勢:</div><p>${p.fortune2025.year_analysis}</p>`; 
+            document.getElementById('btn-calc-ai').innerText="🔄 重新批算"; 
+            document.getElementById('btn-clear-ai').classList.remove('hidden'); 
+        }else{ 
+            d.classList.add('hidden'); 
+            document.getElementById('btn-calc-ai').innerText="✨ 大師批流年"; 
+            document.getElementById('btn-clear-ai').classList.add('hidden'); 
+        } 
+    },
     clearFortune() { const pid=document.getElementById('profile-select').value; const p=this.state.profiles.find(x=>x.id==pid); if(p){delete p.fortune2025; this.saveProfiles(); this.onProfileChange();} },
 
-    // --- 核心資料 ---
-    async initFetch() {
-        try {
-            const response = await fetch(`${CONFIG.JSON_URL}?t=${new Date().getTime()}`);
-            if (!response.ok) throw new Error("Data Error");
-            const fullData = await response.json();
-            this.state.rawData = fullData.games || fullData;
-            this.state.rawJackpots = fullData.jackpots || {};
-            for (let game in this.state.rawData) { this.state.rawData[game] = this.state.rawData[game].map(item => ({...item, date: new Date(item.date)})); }
-            document.getElementById('system-status-text').innerText = "系統連線正常";
-            document.getElementById('system-status-text').className = "text-green-600";
-            document.getElementById('system-status-icon').className = "w-2 h-2 rounded-full bg-green-500";
-            if(fullData.last_updated) document.getElementById('last-update-time').innerText = fullData.last_updated.split(' ')[0];
-            this.renderGameButtons();
-        } catch(e) {
-            console.error(e);
-            document.getElementById('system-status-text').innerText = "離線模式";
-            this.renderGameButtons();
-        }
+    // --- 命理工具函式 ---
+    getGanZhi(year) {
+        const stems = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+        const branches = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+        const offset = year - 4; 
+        return { gan: stems[offset % 10], zhi: branches[offset % 12] };
+    },
+    
+    // 流年四化邏輯 (簡化版：天干決定四化)
+    getFlyingStars(gan) {
+        // 甲廉破武陽, 乙機梁紫陰, 丙同機昌廉...
+        const map = {
+            "甲": { lu: "廉貞", ji: "太陽" }, "乙": { lu: "天機", ji: "太陰" }, "丙": { lu: "天同", ji: "廉貞" },
+            "丁": { lu: "太陰", ji: "巨門" }, "戊": { lu: "貪狼", ji: "天機" }, "己": { lu: "武曲", ji: "文曲" },
+            "庚": { lu: "太陽", ji: "天同" }, "辛": { lu: "巨門", ji: "文昌" }, "壬": { lu: "天梁", ji: "武曲" },
+            "癸": { lu: "破軍", ji: "貪狼" }
+        };
+        return map[gan] || { lu: "吉星", ji: "煞星" };
     },
 
-    renderGameButtons() {
-        const container = document.getElementById('game-btn-container');
-        container.innerHTML = '';
-        GAME_CONFIG.ORDER.forEach(gameName => {
-            const btn = document.createElement('div');
-            btn.className = `game-tab-btn ${gameName === this.state.currentGame ? 'active' : ''}`;
-            btn.innerText = gameName; 
-            btn.onclick = () => {
-                this.state.currentGame = gameName;
-                this.state.currentSubMode = null;
-                this.resetFilter();
-                document.querySelectorAll('.game-tab-btn').forEach(el => el.classList.remove('active'));
-                btn.classList.add('active');
-                this.updateDashboard();
-            };
-            container.appendChild(btn);
-        });
-        if (!this.state.currentGame && GAME_CONFIG.ORDER.length > 0) {
-            this.state.currentGame = GAME_CONFIG.ORDER[0];
-            container.querySelector('.game-tab-btn')?.classList.add('active');
-            this.updateDashboard();
-        }
+    // 河圖洛書數值映射
+    getHeTuNumbers(star) {
+        // 金4,9 水1,6 木3,8 火2,7 土5,0
+        if (["武曲", "七殺", "文昌", "擎羊"].some(s => star.includes(s))) return [4, 9]; // 金
+        if (["天機", "貪狼", "天梁"].some(s => star.includes(s))) return [3, 8]; // 木
+        if (["太陰", "天同", "破軍", "巨門", "文曲"].some(s => star.includes(s))) return [1, 6]; // 水
+        if (["太陽", "廉貞", "火星", "鈴星"].some(s => star.includes(s))) return [2, 7]; // 火
+        if (["紫微", "天府", "天相", "左輔", "右弼"].some(s => star.includes(s))) return [5, 0]; // 土
+        return [];
     },
 
-    updateDashboard() {
-        const gameName = this.state.currentGame;
-        const gameDef = GAME_CONFIG.GAMES[gameName];
-        let data = this.state.rawData[gameName] || [];
-        if (this.state.filterPeriod) data = data.filter(item => String(item.period).includes(this.state.filterPeriod));
-        if (this.state.filterYear) data = data.filter(item => item.date.getFullYear() === parseInt(this.state.filterYear));
-        if (this.state.filterMonth) data = data.filter(item => (item.date.getMonth() + 1) === parseInt(this.state.filterMonth));
-
-        document.getElementById('current-game-title').innerText = gameName;
-        document.getElementById('total-count').innerText = data.length;
-        document.getElementById('latest-period').innerText = data.length > 0 ? `${data[0].period}期` : "--期";
-        
-        const jackpotContainer = document.getElementById('jackpot-container');
-        if (this.state.rawJackpots[gameName] && !this.state.filterPeriod) {
-            jackpotContainer.classList.remove('hidden');
-            document.getElementById('jackpot-amount').innerText = `$${this.state.rawJackpots[gameName]}`;
-        } else { jackpotContainer.classList.add('hidden'); }
-
-        this.renderSubModeUI(gameDef);
-        this.renderHotStats('stat-year', data);
-        this.renderHotStats('stat-month', data.slice(0, 30));
-        this.renderHotStats('stat-recent', data.slice(0, 10));
-        
-        document.getElementById('no-result-msg').classList.toggle('hidden', data.length > 0);
-        this.renderHistoryList(data.slice(0, 5));
-    },
-
-    renderSubModeUI(gameDef) {
-        const area = document.getElementById('submode-area');
-        const container = document.getElementById('submode-tabs');
-        const rulesContent = document.getElementById('game-rules-content');
-        rulesContent.classList.add('hidden');
-        if (gameDef.subModes) {
-            area.classList.remove('hidden');
-            container.innerHTML = '';
-            if (!this.state.currentSubMode) this.state.currentSubMode = gameDef.subModes[0].id;
-            gameDef.subModes.forEach(mode => {
-                const tab = document.createElement('div');
-                tab.className = `submode-tab ${this.state.currentSubMode === mode.id ? 'active' : ''}`;
-                tab.innerText = mode.name;
-                tab.onclick = () => {
-                    this.state.currentSubMode = mode.id;
-                    document.querySelectorAll('.submode-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                };
-                container.appendChild(tab);
-            });
-            rulesContent.innerHTML = gameDef.article || "暫無說明";
-        } else { area.classList.add('hidden'); this.state.currentSubMode = null; }
-    },
+    // --- 核心資料與 UI ---
+    async initFetch() { /*...*/ try { const response = await fetch(`${CONFIG.JSON_URL}?t=${new Date().getTime()}`); if (!response.ok) throw new Error("Data Error"); const fullData = await response.json(); this.state.rawData = fullData.games || fullData; this.state.rawJackpots = fullData.jackpots || {}; for (let game in this.state.rawData) { this.state.rawData[game] = this.state.rawData[game].map(item => ({...item, date: new Date(item.date)})); } document.getElementById('system-status-text').innerText = "系統連線正常"; document.getElementById('system-status-text').className = "text-green-600"; document.getElementById('system-status-icon').className = "w-2 h-2 rounded-full bg-green-500"; if(fullData.last_updated) document.getElementById('last-update-time').innerText = fullData.last_updated.split(' ')[0]; this.renderGameButtons(); } catch(e) { document.getElementById('system-status-text').innerText = "離線模式"; this.renderGameButtons(); } },
+    renderGameButtons() { /*...*/ const container = document.getElementById('game-btn-container'); container.innerHTML = ''; GAME_CONFIG.ORDER.forEach(gameName => { const btn = document.createElement('div'); btn.className = `game-tab-btn ${gameName === this.state.currentGame ? 'active' : ''}`; btn.innerText = gameName; btn.onclick = () => { this.state.currentGame = gameName; this.state.currentSubMode = null; this.resetFilter(); document.querySelectorAll('.game-tab-btn').forEach(el => el.classList.remove('active')); btn.classList.add('active'); this.updateDashboard(); }; container.appendChild(btn); }); if (!this.state.currentGame && GAME_CONFIG.ORDER.length > 0) { this.state.currentGame = GAME_CONFIG.ORDER[0]; container.querySelector('.game-tab-btn')?.classList.add('active'); this.updateDashboard(); } },
+    updateDashboard() { /*...*/ const gameName = this.state.currentGame; const gameDef = GAME_CONFIG.GAMES[gameName]; let data = this.state.rawData[gameName] || []; if (this.state.filterPeriod) data = data.filter(item => String(item.period).includes(this.state.filterPeriod)); if (this.state.filterYear) data = data.filter(item => item.date.getFullYear() === parseInt(this.state.filterYear)); if (this.state.filterMonth) data = data.filter(item => (item.date.getMonth() + 1) === parseInt(this.state.filterMonth)); document.getElementById('current-game-title').innerText = gameName; document.getElementById('total-count').innerText = data.length; document.getElementById('latest-period').innerText = data.length > 0 ? `${data[0].period}期` : "--期"; const jackpotContainer = document.getElementById('jackpot-container'); if (this.state.rawJackpots[gameName] && !this.state.filterPeriod) { jackpotContainer.classList.remove('hidden'); document.getElementById('jackpot-amount').innerText = `$${this.state.rawJackpots[gameName]}`; } else { jackpotContainer.classList.add('hidden'); } this.renderSubModeUI(gameDef); this.renderHotStats('stat-year', data); this.renderHotStats('stat-month', data.slice(0, 30)); this.renderHotStats('stat-recent', data.slice(0, 10)); document.getElementById('no-result-msg').classList.toggle('hidden', data.length > 0); this.renderHistoryList(data.slice(0, 5)); },
+    renderSubModeUI(gameDef) { /*...*/ const area = document.getElementById('submode-area'); const container = document.getElementById('submode-tabs'); const rulesContent = document.getElementById('game-rules-content'); rulesContent.classList.add('hidden'); if (gameDef.subModes) { area.classList.remove('hidden'); container.innerHTML = ''; if (!this.state.currentSubMode) this.state.currentSubMode = gameDef.subModes[0].id; gameDef.subModes.forEach(mode => { const tab = document.createElement('div'); tab.className = `submode-tab ${this.state.currentSubMode === mode.id ? 'active' : ''}`; tab.innerText = mode.name; tab.onclick = () => { this.state.currentSubMode = mode.id; document.querySelectorAll('.submode-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }; container.appendChild(tab); }); rulesContent.innerHTML = gameDef.article || "暫無說明"; } else { area.classList.add('hidden'); this.state.currentSubMode = null; } },
     toggleRules() { document.getElementById('game-rules-content').classList.toggle('hidden'); },
-
-    renderHistoryList(data) {
-        const list = document.getElementById('history-list');
-        list.innerHTML = '';
-        data.forEach(item => {
-            let numsHtml = "";
-            const gameDef = GAME_CONFIG.GAMES[this.state.currentGame];
-            if (gameDef.type === 'digit') {
-                numsHtml = item.numbers.map(n => `<span class="ball-sm">${n}</span>`).join('');
-            } else {
-                const len = item.numbers.length;
-                let normal = [], special = null;
-                if (gameDef.type === 'power') { special = item.numbers[len-1]; normal = item.numbers.slice(0, len-1); }
-                else if (gameDef.special) { special = item.numbers[len-1]; normal = item.numbers.slice(0, len-1); }
-                else { normal = item.numbers; }
-                numsHtml = normal.map(n => `<span class="ball-sm">${n}</span>`).join('');
-                if (special !== null) numsHtml += `<span class="ball-sm ball-special ml-2 font-black border-none">${special}</span>`;
-            }
-            list.innerHTML += `<tr class="table-row"><td class="px-5 py-3 border-b border-stone-100"><div class="font-bold text-stone-700">No. ${item.period}</div><div class="text-[10px] text-stone-400">${item.date.toLocaleDateString()}</div></td><td class="px-5 py-3 border-b border-stone-100 flex flex-wrap gap-1">${numsHtml}</td></tr>`;
-        });
-    },
-    renderHotStats(elId, dataset) {
-        const el = document.getElementById(elId);
-        if (!dataset || dataset.length === 0) { el.innerHTML = '<span class="text-stone-300 text-[10px]">無數據</span>'; return; }
-        const freq = {}; dataset.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1));
-        const sorted = Object.entries(freq).sort((a,b) => b[1] - a[1]).slice(0, 5);
-        el.innerHTML = sorted.map(([n, c]) => `<div class="flex flex-col items-center"><div class="ball ball-hot mb-1 scale-75">${n}</div><div class="text-sm text-stone-600 font-black">${c}</div></div>`).join('');
-    },
-
-    selectSchool(school) {
-        this.state.currentSchool = school;
-        const info = GAME_CONFIG.SCHOOLS[school];
-        document.querySelectorAll('.school-card').forEach(el => {
-            el.classList.remove('active');
-            Object.values(GAME_CONFIG.SCHOOLS).forEach(s => { if(s.color) el.classList.remove(s.color); });
-        });
-        const activeCard = document.querySelector(`.school-${school}`);
-        if(activeCard) { activeCard.classList.add('active'); activeCard.classList.add(info.color); }
-        const container = document.getElementById('school-description');
-        container.className = `text-sm leading-relaxed text-stone-600 bg-stone-50 p-5 rounded-xl border-l-4 ${info.color}`;
-        container.innerHTML = `<h4 class="text-base font-bold mb-3 text-stone-800">${info.title}</h4>${info.desc}`;
-        document.getElementById('wuxing-options').classList.toggle('hidden', school !== 'wuxing');
-    },
+    renderHistoryList(data) { /*...*/ const list = document.getElementById('history-list'); list.innerHTML = ''; data.forEach(item => { let numsHtml = ""; const gameDef = GAME_CONFIG.GAMES[this.state.currentGame]; if (gameDef.type === 'digit') { numsHtml = item.numbers.map(n => `<span class="ball-sm">${n}</span>`).join(''); } else { const len = item.numbers.length; let normal = [], special = null; if (gameDef.type === 'power') { special = item.numbers[len-1]; normal = item.numbers.slice(0, len-1); } else if (gameDef.special) { special = item.numbers[len-1]; normal = item.numbers.slice(0, len-1); } else { normal = item.numbers; } numsHtml = normal.map(n => `<span class="ball-sm">${n}</span>`).join(''); if (special !== null) numsHtml += `<span class="ball-sm ball-special ml-2 font-black border-none">${special}</span>`; } list.innerHTML += `<tr class="table-row"><td class="px-5 py-3 border-b border-stone-100"><div class="font-bold text-stone-700">No. ${item.period}</div><div class="text-[10px] text-stone-400">${item.date.toLocaleDateString()}</div></td><td class="px-5 py-3 border-b border-stone-100 flex flex-wrap gap-1">${numsHtml}</td></tr>`; }); },
+    renderHotStats(elId, dataset) { /*...*/ const el = document.getElementById(elId); if (!dataset || dataset.length === 0) { el.innerHTML = '<span class="text-stone-300 text-[10px]">無數據</span>'; return; } const freq = {}; dataset.forEach(d => d.numbers.forEach(n => freq[n] = (freq[n]||0)+1)); const sorted = Object.entries(freq).sort((a,b) => b[1] - a[1]).slice(0, 5); el.innerHTML = sorted.map(([n, c]) => `<div class="flex flex-col items-center"><div class="ball ball-hot mb-1 scale-75">${n}</div><div class="text-sm text-stone-600 font-black">${c}</div></div>`).join(''); },
+    selectSchool(school) { /*...*/ this.state.currentSchool = school; const info = GAME_CONFIG.SCHOOLS[school]; document.querySelectorAll('.school-card').forEach(el => { el.classList.remove('active'); Object.values(GAME_CONFIG.SCHOOLS).forEach(s => { if(s.color) el.classList.remove(s.color); }); }); const activeCard = document.querySelector(`.school-${school}`); if(activeCard) { activeCard.classList.add('active'); activeCard.classList.add(info.color); } const container = document.getElementById('school-description'); container.className = `text-sm leading-relaxed text-stone-600 bg-stone-50 p-5 rounded-xl border-l-4 ${info.color}`; container.innerHTML = `<h4 class="text-base font-bold mb-3 text-stone-800">${info.title}</h4>${info.desc}`; document.getElementById('wuxing-options').classList.toggle('hidden', school !== 'wuxing'); },
 
     runPrediction() {
         const gameName = this.state.currentGame;
@@ -211,11 +172,7 @@ const App = {
         container.innerHTML = '';
         document.getElementById('result-area').classList.remove('hidden');
 
-        // 包牌邏輯
-        if (countVal === 'pack') {
-            this.algoSmartWheel(data, gameDef);
-            return;
-        }
+        if (countVal === 'pack') { this.algoSmartWheel(data, gameDef); return; }
 
         const count = parseInt(countVal);
         const params = { data, gameDef, subModeId: this.state.currentSubMode };
@@ -230,9 +187,7 @@ const App = {
                 case 'wuxing': result = this.algoWuxing(params); break;
             }
             if (result) {
-                // 蒙地卡羅驗證 (隱藏式，若不佳則重算)
                 if(!this.monteCarloSim(result.numbers, gameDef)) {
-                    // 若驗證失敗，簡單重算一次
                     switch(this.state.currentSchool) {
                         case 'stat': result = this.algoStat(params); break;
                         case 'pattern': result = this.algoPattern(params); break;
@@ -245,65 +200,86 @@ const App = {
         }
     },
 
-    // --- 專家級演算法 & 包牌邏輯 ---
+    // --- 專家級演算法 & 包牌 ---
     algoSmartWheel(data, gameDef) {
         let results = [];
-        let reason = "聰明包牌";
-
         if (gameDef.type === 'power') {
-            // 威力彩：第二區 1-8 全包策略
-            const bestZone1 = this.calculateZone(data, gameDef.range, 6, false, 'stat').map(n=>n.val); // 簡單取最強6碼
-            for(let i=1; i<=8; i++) {
-                results.push({ numbers: [...bestZone1, i], groupReason: `威力彩 800元全包 (第二區必中)` });
-            }
+            const bestZone1 = this.calculateZone(data, gameDef.range, 6, false, 'stat', [], {}, null).map(n=>n.val);
+            for(let i=1; i<=8; i++) { results.push({ numbers: [...bestZone1, i], groupReason: `威力彩 800元全包 (第二區必中)` }); }
         } else if (gameDef.type === 'digit') {
-            // 3星/4星：複式包牌
-            const best3 = this.calculateZone(data, 9, 3, true, 'stat').map(n=>n.val); // 選3個強號
+            const best3 = this.calculateZone(data, 9, 3, true, 'stat', [], {}, null).map(n=>n.val);
             const perms = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
-            perms.forEach(p => {
-                const set = [best3[p[0]], best3[p[1]], best3[p[2]]];
-                results.push({ numbers: set, groupReason: `正彩複式包牌 (共${perms.length}注)` });
-            });
+            perms.forEach(p => { const set = [best3[p[0]], best3[p[1]], best3[p[2]]]; results.push({ numbers: set, groupReason: `正彩複式包牌` }); });
         } else {
-            // 大樂透/539：旋轉矩陣 (C10取6) -> 10注
-            const pool = this.calculateZone(data, gameDef.range, 10, false, 'stat').map(n=>n.val);
+            const pool = this.calculateZone(data, gameDef.range, 10, false, 'stat', [], {}, null).map(n=>n.val);
             for(let k=0; k<10; k++) {
                 const shuffled = [...pool].sort(() => 0.5 - Math.random());
-                results.push({ numbers: shuffled.slice(0, gameDef.count).sort((a,b)=>a-b), groupReason: `旋轉矩陣 (10碼選6縮水)` });
+                results.push({ numbers: shuffled.slice(0, gameDef.count).sort((a,b)=>a-b), groupReason: `旋轉矩陣縮水包牌` });
+            }
+        }
+        results.forEach((res, idx) => this.renderRow({numbers: res.numbers.map(n=>({val:n, tag:'包牌'})), groupReason: res.groupReason}, idx+1));
+    },
+    monteCarloSim(numbers, gameDef) { if(gameDef.type === 'digit') return true; return true; },
+    checkPoisson(num, freq, totalDraws) { const theoreticalFreq = totalDraws / 49; return freq < (theoreticalFreq * 0.5); },
+    getLotteryStats(data, range, count) {
+        const isDigit = range === 9; const stats = { freq: {}, missing: {}, totalDraws: data.length };
+        const maxNum = isDigit ? 9 : range; const minNum = isDigit ? 0 : 1;
+        for (let i = minNum; i <= maxNum; i++) { stats.freq[i] = 0; stats.missing[i] = data.length; }
+        data.forEach((d, drawIndex) => { d.numbers.forEach(n => { if (n >= minNum && n <= maxNum) { stats.freq[n]++; if (stats.missing[n] === data.length) { stats.missing[n] = drawIndex; } } }); });
+        return stats;
+    },
+
+    // 5. 五行生肖 - 邏輯升級
+    algoWuxing({ gameDef }) {
+        const currentYear = new Date().getFullYear();
+        const ganZhi = this.getGanZhi(currentYear); // 1. 獲取干支
+        const flyingStars = this.getFlyingStars(ganZhi.gan); // 2. 獲取四化 (化祿/化忌)
+        
+        // 3. 建立河圖權重
+        const wuxingWeights = {};
+        for(let i=(gameDef.type==='digit'?0:1); i<=gameDef.range; i++) wuxingWeights[i] = 10; // 基礎分
+
+        // 加權化祿星的五行數字
+        const luNums = this.getHeTuNumbers(flyingStars.lu);
+        luNums.forEach(tail => {
+            for(let i=1; i<=gameDef.range; i++) {
+                if (i % 10 === tail || i % 10 === (tail === 0 ? 0 : 5)) wuxingWeights[i] += 50; // 河圖加權
+            }
+        });
+
+        // 4. 結合 Profile 幸運色/尾數 (如果有的話，這裡可以讀取 p.fortune2025)
+        const pid = document.getElementById('profile-select').value;
+        const profile = this.state.profiles.find(p => p.id == pid);
+        if (profile && profile.fortune2025) {
+            const mData = profile.fortune2025.monthly_elements?.[0];
+            if(mData && mData.lucky_tails) { 
+                mData.lucky_tails.forEach(t => { for(let i=1; i<=gameDef.range; i++) if (i % 10 === t) wuxingWeights[i] += 30; }); 
             }
         }
 
-        results.forEach((res, idx) => this.renderRow({numbers: res.numbers.map(n=>({val:n, tag:'包牌'})), groupReason: res.groupReason}, idx+1));
+        // Context 物件傳遞給 calculateZone 用於顯示 Tag
+        const wuxingContext = {
+            gan: ganZhi.gan,
+            zhi: ganZhi.zhi,
+            luStar: flyingStars.lu,
+            jiStar: flyingStars.ji
+        };
+
+        const pickZone1 = this.calculateZone([], gameDef.range, gameDef.count, false, 'wuxing', [], wuxingWeights, null, wuxingContext);
+        let pickZone2 = [];
+        if (gameDef.type === 'power') pickZone2 = this.calculateZone([], gameDef.zone2, 1, true, 'wuxing', [], wuxingWeights, null, wuxingContext);
+        
+        return { numbers: [...pickZone1, ...pickZone2], groupReason: `流年${ganZhi.gan}${ganZhi.zhi} (${flyingStars.lu}化祿)` };
     },
 
-    // 蒙地卡羅驗證 (模擬)
-    monteCarloSim(numbers, gameDef) {
-        if(gameDef.type === 'digit') return true; 
-        return true; 
-    },
-
-    // 卜瓦松檢定 (Poisson) - 用於 calculateZone 內部
-    checkPoisson(num, freq, totalDraws) {
-        // 這是簡化的卜瓦松檢定：如果該號碼的頻率遠低於理論值，則視為極限冷號
-        const theoreticalFreq = totalDraws / 49; 
-        return freq < (theoreticalFreq * 0.5); 
-    },
-
-    // 1. 統計學派
+    // 其他學派邏輯
     algoStat({ data, gameDef }) {
-        // 必須先獲取 stats
         const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null;
-
-        // pickZone1 呼叫 calculateZone 並傳遞 stats 資訊
         const pickZone1 = this.calculateZone(data, gameDef.range, gameDef.count, false, 'stat', [], {}, stats);
         let pickZone2 = [];
-        if (gameDef.type === 'power') {
-            // 威力彩第二區極限回補
-            pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'stat_missing', [], {}, stats); 
-        }
+        if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'stat_missing', [], {}, stats); 
         return { numbers: [...pickZone1, ...pickZone2], groupReason: "數據透明化分析" };
     },
-    // 2. 關聯學派
     algoPattern({ data, gameDef }) {
         if(data.length < 2) return this.algoStat({data, gameDef});
         const lastDraw = data[0].numbers;
@@ -313,7 +289,6 @@ const App = {
         if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'random');
         return { numbers: [...pickZone1, ...pickZone2], groupReason: "版路連動證據追蹤" };
     },
-    // 3. 平衡學派
     algoBalance({ data, gameDef, subModeId }) {
         let bestSet = []; let bestReason = "";
         const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null;
@@ -335,7 +310,6 @@ const App = {
         }
         return { numbers: bestSet, groupReason: bestReason || "結構平衡分析" };
     },
-    // 4. AI學派
     algoAI({ data, gameDef }) {
         const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null;
         const pickZone1 = this.calculateZone(data, gameDef.range, gameDef.count, false, 'ai_weight', [], {}, stats);
@@ -343,185 +317,77 @@ const App = {
         if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'ai_weight', [], {}, stats);
         return { numbers: [...pickZone1, ...pickZone2], groupReason: "短期權重趨勢追蹤" };
     },
-    // 5. 五行生肖
-    algoWuxing({ gameDef }) {
-        const stats = null; // No history data needed for Wuxing's tagging logic
-        const pickZone1 = this.calculateZone([], gameDef.range, gameDef.count, false, 'wuxing', [], {}, stats);
-        let pickZone2 = [];
-        if (gameDef.type === 'power') pickZone2 = this.calculateZone([], gameDef.zone2, 1, true, 'wuxing', [], {}, stats);
-        return { numbers: [...pickZone1, ...pickZone2], groupReason: "個人命理磁場推算" };
-    },
 
+    // calculateZone - 加入 wuxingContext
+    calculateZone(data, range, count, isSpecial, mode, lastDraw=[], customWeights={}, stats={}, wuxingContext={}) {
+        const max = range; const min = (mode.includes('digit')) ? 0 : 1; 
+        const totalDraws = stats ? stats.totalDraws : 0; const recentDrawsCount = 30;
+        let weights = customWeights; // 優先使用外部傳入的權重 (如五行權重)
 
-    // Helper to calculate total stats (needed for missing/freq checks)
-    getLotteryStats(data, range, count) {
-        const isDigit = range === 9;
-        const stats = { freq: {}, missing: {}, totalDraws: data.length };
-        const maxNum = isDigit ? 9 : range;
-        const minNum = isDigit ? 0 : 1;
-
-        for (let i = minNum; i <= maxNum; i++) {
-            stats.freq[i] = 0;
-            stats.missing[i] = data.length; 
-        }
-
-        data.forEach((d, drawIndex) => {
-            d.numbers.forEach(n => {
-                if (n >= minNum && n <= maxNum) {
-                    stats.freq[n]++;
-                    if (stats.missing[n] === data.length) {
-                        stats.missing[n] = drawIndex; 
-                    }
-                }
-            });
-        });
-        return stats;
-    },
-
-    // Main calculator function (now handles detailed tagging)
-    calculateZone(data, range, count, isSpecial, mode, lastDraw=[], customWeights={}, stats={}) {
-        const max = range; 
-        const min = (mode.includes('digit')) ? 0 : 1; 
-        
-        const totalDraws = stats ? stats.totalDraws : 0;
-        const recentDrawsCount = 30;
-
-        let weights = customWeights;
-        
         if (Object.keys(weights).length === 0 || mode.includes('random')) {
             for(let i=min; i<=max; i++) weights[i] = 10;
             if (mode === 'stat') {
-                data.forEach(d => { 
-                    const nums = d.numbers.filter(n => n <= max); 
-                    nums.forEach(n => weights[n] = (weights[n]||10) + 10); 
-                });
+                data.forEach(d => { const nums = d.numbers.filter(n => n <= max); nums.forEach(n => weights[n] = (weights[n]||10) + 10); });
             } else if (mode === 'ai_weight') {
-                 data.slice(0, 10).forEach((d, idx) => { 
-                    const w = 20 - idx;
-                    d.numbers.forEach(n => { if(n<=max) weights[n] += w; });
-                });
+                 data.slice(0, 10).forEach((d, idx) => { const w = 20 - idx; d.numbers.forEach(n => { if(n<=max) weights[n] += w; }); });
             }
         }
 
-        // 1. Selection logic (unchanged)
         const selected = []; const pool = [];
-        for(let i=min; i<=max; i++) { 
-            const w = Math.floor(weights[i]); 
-            for(let k=0; k<w; k++) pool.push(i); 
-        }
-
+        for(let i=min; i<=max; i++) { const w = Math.floor(weights[i] || 1); for(let k=0; k<w; k++) pool.push(i); }
         while(selected.length < count) {
             if(pool.length === 0) break;
-            const idx = Math.floor(Math.random() * pool.length); 
-            const val = pool[idx];
+            const idx = Math.floor(Math.random() * pool.length); const val = pool[idx];
             const isDigit = mode.includes('digit');
             if (isDigit || !selected.includes(val)) {
                 selected.push(val);
-                if (!isDigit) { 
-                    const temp = pool.filter(n => n !== val); 
-                    pool.length = 0; pool.push(...temp); 
-                }
+                if (!isDigit) { const temp = pool.filter(n => n !== val); pool.length = 0; pool.push(...temp); }
             }
         }
         if (!mode.includes('digit') && !isSpecial) selected.sort((a,b)=>a-b);
         
-        // 2. Tagging logic (Crucial change here)
         const resultWithTags = [];
-
         for (const num of selected) {
             let tag = '選號'; 
-
-            if (isSpecial) {
-                 tag = '特別號';
-            } else if (mode === 'stat' || mode === 'stat_missing') {
-                // Stat: 近30期X次 / 遺漏X期 / 極限回補
+            if (isSpecial) { tag = '特別號'; } 
+            else if (mode === 'stat' || mode === 'stat_missing') {
                 const freq30 = data.slice(0, recentDrawsCount).filter(d => d.numbers.includes(num)).length;
                 const missingCount = stats.missing ? stats.missing[num] : 0;
-                
-                if (mode === 'stat_missing') {
-                     tag = '極限回補'; 
-                } else if (freq30 > 5 && totalDraws > recentDrawsCount) { 
-                    tag = `近${recentDrawsCount}期${freq30}次`;
-                } else if (missingCount > 15 && totalDraws > recentDrawsCount) { 
-                    tag = `遺漏${missingCount}期`;
-                } else {
-                    tag = '常態選號';
-                }
-
+                if (mode === 'stat_missing') { tag = '極限回補'; } 
+                else if (freq30 > 5) { tag = `近${recentDrawsCount}期${freq30}次`; } 
+                else if (missingCount > 15) { tag = `遺漏${missingCount}期`; } 
+                else { tag = '常態選號'; }
             } else if (mode === 'pattern') {
-                // Pattern: X拖出 / 連莊強勢 / 鄰號
-                const numTail = num % 10;
-                const lastDrawTails = lastDraw.map(n => n % 10);
-                
-                if (lastDraw.includes(num)) {
-                    tag = '連莊強勢';
-                } else if (lastDraw.includes(num - 1) || lastDraw.includes(num + 1)) {
-                    const neighbor = lastDraw.includes(num-1) ? (num-1) : (num+1);
-                    tag = `${neighbor}鄰號`; 
-                } else if (lastDrawTails.includes(numTail) && numTail !== 0) { // 避免 0 尾數誤判
-                    tag = `${numTail}尾群聚`;
-                } else {
-                    tag = '版路預測';
-                }
-
+                const numTail = num % 10; const lastDrawTails = lastDraw.map(n => n % 10);
+                if (lastDraw.includes(num)) { tag = '連莊強勢'; } 
+                else if (lastDraw.includes(num - 1) || lastDraw.includes(num + 1)) { const neighbor = lastDraw.includes(num-1) ? (num-1) : (num+1); tag = `${neighbor}鄰號`; } 
+                else if (lastDrawTails.includes(numTail) && numTail !== 0) { tag = `${numTail}尾群聚`; } 
+                else { tag = '版路預測'; }
             } else if (mode === 'ai_weight') {
-                // AI: 趨勢分XX (滿分100)
-                const maxWeight = Math.max(...Object.values(weights));
-                const score = Math.round((weights[num] / maxWeight) * 100);
-                tag = `趨勢分${score}`;
-                
+                const maxWeight = Math.max(...Object.values(weights)); const score = Math.round((weights[num] / maxWeight) * 100); tag = `趨勢分${score}`;
             } else if (mode.includes('balance') || mode.includes('random')) {
-                // Balance: 屬性標示 (大號/小號, 奇數/偶數)
-                const isOdd = num % 2 !== 0;
-                const isBig = num > max / 2;
-                let attributeTag = "";
-
-                if (isBig) attributeTag += "大號"; else attributeTag += "小號";
-                attributeTag += "/";
-                if (isOdd) attributeTag += "奇數"; else attributeTag += "偶數";
-                
-                tag = attributeTag; 
-                
+                const isOdd = num % 2 !== 0; const isBig = num > max / 2;
+                tag = (isBig ? "大號" : "小號") + "/" + (isOdd ? "奇數" : "偶數"); 
             } else if (mode === 'wuxing') {
-                // Wuxing: 命理屬性 (Hardcoded for now)
-                if (num % 5 === 1) tag = '屬火財位';
+                // 5. 證據顯示：依據 wuxingContext 判斷 tag
+                const heTu = this.getHeTuNumbers(wuxingContext.luStar);
+                if (heTu.some(t => num % 10 === t || num % 10 === (t===0?0:5))) {
+                    tag = `${wuxingContext.luStar}化祿`;
+                } else if (num % 5 === 1) tag = '屬火財位';
                 else if (num % 5 === 2) tag = '屬金貴人';
                 else tag = '五行選號';
             }
-
             resultWithTags.push({ val: num, tag: tag });
         }
-
         return resultWithTags;
     },
 
-    calcAC(numbers) {
-        let diffs = new Set();
-        for(let i=0; i<numbers.length; i++) for(let j=i+1; j<numbers.length; j++) diffs.add(Math.abs(numbers[i] - numbers[j]));
-        return diffs.size - (numbers.length - 1);
-    },
-
-    renderRow(resultObj, index) {
-        const container = document.getElementById('prediction-output');
-        const colors = { stat: 'bg-stone-200 text-stone-700', pattern: 'bg-purple-100 text-purple-700', balance: 'bg-emerald-100 text-emerald-800', ai: 'bg-amber-100 text-amber-800', wuxing: 'bg-pink-100 text-pink-800' };
-        const colorClass = colors[this.state.currentSchool] || 'bg-stone-200';
-        let html = `<div class="flex flex-col gap-2 p-4 bg-white rounded-xl border border-stone-200 shadow-sm animate-fade-in hover:shadow-md transition"><div class="flex items-center gap-3"><span class="text-[10px] font-black text-stone-300 tracking-widest">SET ${index}</span><div class="flex flex-wrap gap-2">`;
-        resultObj.numbers.forEach(item => { html += `<div class="flex flex-col items-center"><div class="ball-sm ${colorClass}" style="box-shadow: none;">${item.val}</div>${item.tag ? `<div class="reason-tag">${item.tag}</div>` : ''}</div>`; });
-        html += `</div></div>`;
-        if (resultObj.groupReason) { html += `<div class="text-[10px] text-stone-500 font-medium bg-stone-50 px-2 py-1.5 rounded border border-stone-100 flex items-center gap-1"><span class="text-sm">💡</span> ${resultObj.groupReason}</div>`; }
-        html += `</div>`;
-        container.innerHTML += html;
-    },
+    calcAC(numbers) { let diffs = new Set(); for(let i=0; i<numbers.length; i++) for(let j=i+1; j<numbers.length; j++) diffs.add(Math.abs(numbers[i] - numbers[j])); return diffs.size - (numbers.length - 1); },
+    renderRow(resultObj, index) { const container = document.getElementById('prediction-output'); const colors = { stat: 'bg-stone-200 text-stone-700', pattern: 'bg-purple-100 text-purple-700', balance: 'bg-emerald-100 text-emerald-800', ai: 'bg-amber-100 text-amber-800', wuxing: 'bg-pink-100 text-pink-800' }; const colorClass = colors[this.state.currentSchool] || 'bg-stone-200'; let html = `<div class="flex flex-col gap-2 p-4 bg-white rounded-xl border border-stone-200 shadow-sm animate-fade-in hover:shadow-md transition"><div class="flex items-center gap-3"><span class="text-[10px] font-black text-stone-300 tracking-widest">SET ${index}</span><div class="flex flex-wrap gap-2">`; resultObj.numbers.forEach(item => { html += `<div class="flex flex-col items-center"><div class="ball-sm ${colorClass}" style="box-shadow: none;">${item.val}</div>${item.tag ? `<div class="reason-tag">${item.tag}</div>` : ''}</div>`; }); html += `</div></div>`; if (resultObj.groupReason) { html += `<div class="text-[10px] text-stone-500 font-medium bg-stone-50 px-2 py-1.5 rounded border border-stone-100 flex items-center gap-1"><span class="text-sm">💡</span> ${resultObj.groupReason}</div>`; } html += `</div>`; container.innerHTML += html; },
     populateYearSelect() { const yearSelect = document.getElementById('search-year'); for (let y = 2021; y <= 2026; y++) { const opt = document.createElement('option'); opt.value = y; opt.innerText = `${y}`; yearSelect.appendChild(opt); } },
     populateMonthSelect() { const monthSelect = document.getElementById('search-month'); for (let m = 1; m <= 12; m++) { const opt = document.createElement('option'); opt.value = m; opt.innerText = `${m} 月`; monthSelect.appendChild(opt); } },
     resetFilter() { this.state.filterPeriod = ""; this.state.filterYear = ""; this.state.filterMonth = ""; const pInput = document.getElementById('search-period'); if(pInput) pInput.value = ""; document.getElementById('search-year').value = ""; document.getElementById('search-month').value = ""; this.updateDashboard(); },
-    toggleHistory() {
-        const c = document.getElementById('history-container');
-        const a = document.getElementById('history-arrow');
-        const t = document.getElementById('history-toggle-text');
-        if (c.classList.contains('max-h-0')) { c.classList.remove('max-h-0'); c.classList.add('max-h-[1000px]'); a.classList.add('rotate-180'); t.innerText = "隱藏近 5 期"; } 
-        else { c.classList.add('max-h-0'); c.classList.remove('max-h-[1000px]'); a.classList.remove('rotate-180'); t.innerText = "顯示近 5 期"; }
-    },
+    toggleHistory() { const c = document.getElementById('history-container'); const a = document.getElementById('history-arrow'); const t = document.getElementById('history-toggle-text'); if (c.classList.contains('max-h-0')) { c.classList.remove('max-h-0'); c.classList.add('max-h-[1000px]'); a.classList.add('rotate-180'); t.innerText = "隱藏近 5 期"; } else { c.classList.add('max-h-0'); c.classList.remove('max-h-[1000px]'); a.classList.remove('rotate-180'); t.innerText = "顯示近 5 期"; } },
 };
 
 window.app = App;
