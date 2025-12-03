@@ -102,7 +102,7 @@ export const GAME_CONFIG = {
                     </summary>
                     <div class="mt-2 pl-3 text-xs text-stone-500 space-y-2 border-l-2 border-school-balance">
                         <p>1. 試誤過濾法 (Trial & Error)：系統不直接選號，而是先隨機生成大量組合，再透過濾網篩選。</p>
-                        <p>2. AC 值 (Arithmetic Complexity) 檢測：(針對樂透型) 計算號碼組中所有數字兩兩相減的「差值數」。程式碼設定門檻為 AC >= 4，確保選出的號碼結構夠複雜，避免簡單排列。</p>
+                        <p>2. AC 值 (Arithmetic Complexity) 檢測：(針對樂透型) 計算號碼組中所有數字兩兩相減的「差值數」。程式碼設定門檻為 AC >= 4，確保選出的號碼結構夠複雜，避免簡單排列（如 01, 02, 03, 04, 05, 06）。</p>
                         <p>3. 黃金和值 (Golden Sum)：(針對 3星/4星 組彩) 計算數字總和，強制鎖定在 10 ~ 20 這個機率分佈最高的區間。</p>
                         <p>4. 屬性標記：分析每個號碼的數學屬性（大小、奇偶）。</p>
                         <div class="mt-2 pt-2 border-t border-stone-200">
@@ -128,7 +128,7 @@ export const GAME_CONFIG = {
                     <div class="mt-2 pl-3 text-xs text-stone-500 space-y-2 border-l-2 border-school-stat">
                         <p>1. 頻率累加演算法：遍歷歷史資料庫，計算每個號碼的出現次數。基礎權重 10，每出現一次 +10。</p>
                         <p>2. 遺漏值 (Missing Value) 追蹤：計算每個號碼距離上次開出已經過了多少期。</p>
-                        <p>3. 卜瓦松檢定概念 (Poisson-inspired)：設定具體閥值（近30期出現 > 5 次判定為熱；遺漏 > 15 期判定為冷），模擬顯著性檢定。</p>
+                        <p>3. 卜瓦松檢定概念 (Poisson-inspired)：在程式碼中設定了具體的閥值（近30期出現 > 5 次判定為熱；遺漏 > 15 期判定為冷），模擬統計學上的顯著性檢定。</p>
                         <p>4. 極限回補機制 (Extreme Rebound)：(針對威力彩第二區) 強制給予隨機冷號極高權重 (500分)，模擬「賭冷門牌反彈」的策略。</p>
                         <div class="mt-2 pt-2 border-t border-stone-200">
                             <span class="font-bold text-red-500">🔴 證據顯示 (Tag)：</span>
