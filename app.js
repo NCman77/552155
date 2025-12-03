@@ -1,7 +1,7 @@
 /**
  * app.js
  * 核心邏輯層：負責資料處理、演算法運算、DOM 渲染與事件綁定
- * V25.1: 實作「動態格局分析」，讓 Group Reason 根據選號結果自動生成專業評語
+ * V25.2: 升級 AI Prompt 為資深國學易經術數專家指令，強化命理分析深度
  */
 import { GAME_CONFIG } from './game_config.js';
 
@@ -68,8 +68,61 @@ const App = {
     renderProfileList() { document.getElementById('profile-list').innerHTML = this.state.profiles.map(p=>`<div class="flex justify-between p-2 bg-stone-50 border rounded"><div class="font-bold text-stone-700 text-xs">${p.name}</div><button onclick="app.deleteProfile(${p.id})" class="text-red-400 text-xs">刪除</button></div>`).join(''); },
     renderProfileSelect() { document.getElementById('profile-select').innerHTML = '<option value="">請新增...</option>'+this.state.profiles.map(p=>`<option value="${p.id}">${p.name}</option>`).join(''); },
     deleteCurrentProfile() { const pid = document.getElementById('profile-select').value; if(pid && confirm('刪除?')) { this.deleteProfile(Number(pid)); document.getElementById('profile-select').value=""; this.onProfileChange(); } },
-    async generateAIFortune() { /*...*/ const pid = document.getElementById('profile-select').value; if(!pid||!this.state.apiKey) return alert("請選主角並設定Key"); document.getElementById('ai-loading').classList.remove('hidden'); document.getElementById('btn-calc-ai').disabled=true; const p = this.state.profiles.find(x=>x.id==pid); const prompt=`命理大師分析2025流年。對象:${p.name}。${p.ziwei} ${p.astro}。回傳JSON:{"year_analysis":"100字分析","monthly_elements":[{"month":1,"lucky_tails":[2,7],"lucky_elements":["火"]}]}`; try{ const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.state.apiKey}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})}); const d=await res.json(); p.fortune2025=JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim()); this.saveProfiles(); this.onProfileChange(); }catch(e){alert("失敗");}finally{document.getElementById('ai-loading').classList.add('hidden');document.getElementById('btn-calc-ai').disabled=false;} },
-    onProfileChange() { const pid = document.getElementById('profile-select').value; const s = document.getElementById('ai-fortune-section'); if(!pid){s.classList.add('hidden');return;} s.classList.remove('hidden'); const p=this.state.profiles.find(x=>x.id==pid); const d=document.getElementById('ai-result-display'); if(p&&p.fortune2025){ d.classList.remove('hidden'); d.innerHTML=`<div class="font-bold mb-1">📅 流年運勢:</div><p>${p.fortune2025.year_analysis}</p>`; document.getElementById('btn-calc-ai').innerText="🔄 重新批算"; document.getElementById('btn-clear-ai').classList.remove('hidden'); }else{ d.classList.add('hidden'); document.getElementById('btn-calc-ai').innerText="✨ 大師批流年"; document.getElementById('btn-clear-ai').classList.add('hidden'); } },
+    
+    // --- 紫微斗數 & AI 核心 (深度升級版) ---
+    async generateAIFortune() { 
+        const pid = document.getElementById('profile-select').value; 
+        if(!pid||!this.state.apiKey) return alert("請選主角並設定Key"); 
+        document.getElementById('ai-loading').classList.remove('hidden'); 
+        document.getElementById('btn-calc-ai').disabled=true; 
+        const p = this.state.profiles.find(x=>x.id==pid); 
+        const currentYear = new Date().getFullYear();
+        const ganZhi = this.getGanZhi(currentYear);
+        
+        // 使用使用者提供的專業大師級指令
+        const prompt = `
+        你現在是資深的國學易經術數領域專家，請詳細分析下面這個紫微斗數命盤，綜合使用三合紫微、飛星紫微、河洛紫微、欽天四化等各流派紫微斗數的分析技法，對命盤十二宮星曜分布、限流疊宮和各宮位間的飛宮四化進行細緻分析。
+
+        請基於上述專業分析，針對 ${currentYear}年 (${ganZhi.gan}${ganZhi.zhi}年) 的流年財運進行「數值化轉譯」，找出該命主今年最強的『財氣數字』與『幸運尾數』。
+
+        命主資料：
+        姓名：${p.name} (${p.realname})
+        紫微斗數/星盤資料：${p.ziwei} ${p.astro}
+
+        請務必回傳純 JSON 格式 (不要有 Markdown 標記)，格式如下：
+        {
+            "year_analysis": "請在此提供約 200 字的精闢流年分析，結合命主特點與流年四化，給出具體的財運建議。",
+            "monthly_elements": [
+                {"month": 1, "lucky_tails": [2,7], "lucky_elements": ["火"], "wealth_star": "武曲", "avoid": "忌星"}
+            ]
+        }`; 
+
+        try{ 
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.state.apiKey}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})}); 
+            const d=await res.json(); 
+            p.fortune2025=JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim()); 
+            this.saveProfiles(); 
+            this.onProfileChange(); 
+        }catch(e){alert("AI 分析失敗，請檢查 API Key 或網路"); console.error(e);}finally{document.getElementById('ai-loading').classList.add('hidden');document.getElementById('btn-calc-ai').disabled=false;} 
+    },
+    onProfileChange() { 
+        const pid = document.getElementById('profile-select').value; 
+        const s = document.getElementById('ai-fortune-section'); 
+        if(!pid){s.classList.add('hidden');return;} 
+        s.classList.remove('hidden'); 
+        const p=this.state.profiles.find(x=>x.id==pid); 
+        const d=document.getElementById('ai-result-display'); 
+        if(p&&p.fortune2025){ 
+            d.classList.remove('hidden'); 
+            d.innerHTML=`<div class="font-bold mb-1">📅 流年運勢:</div><p>${p.fortune2025.year_analysis}</p>`; 
+            document.getElementById('btn-calc-ai').innerText="🔄 重新批算"; 
+            document.getElementById('btn-clear-ai').classList.remove('hidden'); 
+        }else{ 
+            d.classList.add('hidden'); 
+            document.getElementById('btn-calc-ai').innerText="✨ 大師批流年"; 
+            document.getElementById('btn-clear-ai').classList.add('hidden'); 
+        } 
+    },
     clearFortune() { const pid=document.getElementById('profile-select').value; const p=this.state.profiles.find(x=>x.id==pid); if(p){delete p.fortune2025; this.saveProfiles(); this.onProfileChange();} },
 
     // --- 命理工具函式 ---
