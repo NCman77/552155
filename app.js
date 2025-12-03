@@ -1,7 +1,7 @@
 /**
  * app.js
  * 核心邏輯層：負責資料處理、演算法運算、DOM 渲染與事件綁定
- * V24.1: 修正五行生肖標籤顯示，移除「五行選號」，落實「星曜證據」
+ * V25.0: 實作「證據式選號」，移除Tag Emoji，顯示直白數據 (遺漏/頻率/趨勢分/星曜)
  */
 import { GAME_CONFIG } from './game_config.js';
 
@@ -137,11 +137,11 @@ const App = {
     },
 
     getHeTuNumbers(star) {
-        if (["武曲", "七殺", "文昌", "擎羊"].some(s => star.includes(s))) return [4, 9]; // 金
-        if (["天機", "貪狼", "天梁"].some(s => star.includes(s))) return [3, 8]; // 木
-        if (["太陰", "天同", "破軍", "巨門", "文曲"].some(s => star.includes(s))) return [1, 6]; // 水
-        if (["太陽", "廉貞", "火星", "鈴星"].some(s => star.includes(s))) return [2, 7]; // 火
-        if (["紫微", "天府", "天相", "左輔", "右弼"].some(s => star.includes(s))) return [5, 0]; // 土
+        if (["武曲", "七殺", "文昌", "擎羊"].some(s => star.includes(s))) return [4, 9]; 
+        if (["天機", "貪狼", "天梁"].some(s => star.includes(s))) return [3, 8]; 
+        if (["太陰", "天同", "破軍", "巨門", "文曲"].some(s => star.includes(s))) return [1, 6]; 
+        if (["太陽", "廉貞", "火星", "鈴星"].some(s => star.includes(s))) return [2, 7]; 
+        if (["紫微", "天府", "天相", "左輔", "右弼"].some(s => star.includes(s))) return [5, 0]; 
         return [];
     },
 
@@ -230,9 +230,9 @@ const App = {
         const flyingStars = this.getFlyingStars(ganZhi.gan);
         
         const wuxingWeights = {};
-        const wuxingTagMap = {}; // 新增 tagMap 用於存儲具體理由
+        const wuxingTagMap = {};
 
-        // 1. 基礎星曜 (Base Star) - 確保所有號碼都有標籤
+        // 1. 基礎星曜 - 確保覆蓋率 100%
         for(let i=(gameDef.type==='digit'?0:1); i<=gameDef.range; i++) {
             wuxingWeights[i] = 10;
             const tail = i % 10;
@@ -241,15 +241,16 @@ const App = {
             else if ([3, 8].includes(tail)) wuxingTagMap[i] = "天機善星";
             else if ([4, 9].includes(tail)) wuxingTagMap[i] = "武曲正財";
             else if ([0, 5].includes(tail)) wuxingTagMap[i] = "天府財庫";
+            else wuxingTagMap[i] = "紫微旺數"; 
         }
 
-        // 2. 流年化祿加權 (Hua Lu) - 覆蓋 Tag
+        // 2. 流年化祿加權
         const luNums = this.getHeTuNumbers(flyingStars.lu);
         luNums.forEach(tail => {
             for(let i=1; i<=gameDef.range; i++) {
                 if (i % 10 === tail || i % 10 === (tail === 0 ? 0 : 5)) {
                     wuxingWeights[i] += 50;
-                    wuxingTagMap[i] = `${flyingStars.lu}化祿`;
+                    wuxingTagMap[i] = `${flyingStars.lu}化祿`; // 優先顯示
                 }
             }
         });
@@ -264,32 +265,72 @@ const App = {
                     for(let i=1; i<=gameDef.range; i++) {
                         if (i % 10 === t) {
                             wuxingWeights[i] += 30;
-                            if (!wuxingTagMap[i].includes("化祿")) { // 只有非化祿才覆蓋，化祿權重最高
-                                wuxingTagMap[i] = "本命旺數";
-                            }
+                            if (!wuxingTagMap[i].includes("化祿")) wuxingTagMap[i] = "本命旺數";
                         }
                     }
                 }); 
             }
         }
 
-        // 傳遞 tagMap 給 calculateZone
         const wuxingContext = { tagMap: wuxingTagMap };
+        const groupReason = `星曜: 1,6=貪狼 | 2,7=太陽 | 3,8=天機 | 4,9=武曲 | 5,0=天府`;
 
         const pickZone1 = this.calculateZone([], gameDef.range, gameDef.count, false, 'wuxing', [], wuxingWeights, null, wuxingContext);
         let pickZone2 = [];
         if (gameDef.type === 'power') pickZone2 = this.calculateZone([], gameDef.zone2, 1, true, 'wuxing', [], wuxingWeights, null, wuxingContext);
         
-        return { numbers: [...pickZone1, ...pickZone2], groupReason: `流年${ganZhi.gan}${ganZhi.zhi} (${flyingStars.lu}化祿)` };
+        return { numbers: [...pickZone1, ...pickZone2], groupReason: groupReason };
     },
 
-    // 其他學派邏輯 (保持不變)
-    algoStat({ data, gameDef }) { /*...*/ const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null; const pickZone1 = this.calculateZone(data, gameDef.range, gameDef.count, false, 'stat', [], {}, stats); let pickZone2 = []; if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'stat_missing', [], {}, stats); return { numbers: [...pickZone1, ...pickZone2], groupReason: "數據透明化分析" }; },
-    algoPattern({ data, gameDef }) { /*...*/ if(data.length < 2) return this.algoStat({data, gameDef}); const lastDraw = data[0].numbers; const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null; const pickZone1 = this.calculateZone(data, gameDef.range, gameDef.count, false, 'pattern', lastDraw, {}, stats); let pickZone2 = []; if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'random'); return { numbers: [...pickZone1, ...pickZone2], groupReason: "版路連動證據追蹤" }; },
-    algoBalance({ data, gameDef, subModeId }) { /*...*/ let bestSet = []; let bestReason = ""; const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null; if (gameDef.type === 'digit' && subModeId === 'group') { while(true) { const set = this.calculateZone(data, 9, gameDef.count, true, 'balance_digit', [], {}, stats); const sum = set.reduce((a,b)=>a + b.val, 0); if (sum >= 10 && sum <= 20) { bestSet = set; bestReason = `和值${sum} (黃金區間)`; break; } } } else { let maxAttempts = 100; while(maxAttempts-- > 0) { const set = this.calculateZone(data, gameDef.range, gameDef.count, false, 'balance', [], {}, stats); const vals = set.map(n=>n.val); if (this.calcAC(vals) >= 4) { bestSet = set; bestReason = `AC值 ${this.calcAC(vals)} 優化`; break; } } if(bestSet.length === 0) bestSet = this.calculateZone(data, gameDef.range, gameDef.count, false, 'random', [], {}, stats); if (gameDef.type === 'power') { const z2 = this.calculateZone(data, gameDef.zone2, 1, true, 'random', [], {}, stats); bestSet = [...bestSet, ...z2]; } } return { numbers: bestSet, groupReason: bestReason || "結構平衡分析" }; },
-    algoAI({ data, gameDef }) { /*...*/ const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null; const pickZone1 = this.calculateZone(data, gameDef.range, gameDef.count, false, 'ai_weight', [], {}, stats); let pickZone2 = []; if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'ai_weight', [], {}, stats); return { numbers: [...pickZone1, ...pickZone2], groupReason: "短期權重趨勢追蹤" }; },
+    // 其他學派邏輯 (更新 Group Reason 與 Tag - 移除Emoji)
+    algoStat({ data, gameDef }) {
+        const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null;
+        const pickZone1 = this.calculateZone(data, gameDef.range, gameDef.count, false, 'stat', [], {}, stats);
+        let pickZone2 = [];
+        if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'stat_missing', [], {}, stats); 
+        return { numbers: [...pickZone1, ...pickZone2], groupReason: "數據策略：熱號追蹤 + 極限遺漏回補" };
+    },
+    algoPattern({ data, gameDef }) {
+        if(data.length < 2) return this.algoStat({data, gameDef});
+        const lastDraw = data[0].numbers;
+        const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null;
+        const pickZone1 = this.calculateZone(data, gameDef.range, gameDef.count, false, 'pattern', lastDraw, {}, stats);
+        let pickZone2 = [];
+        if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'random');
+        return { numbers: [...pickZone1, ...pickZone2], groupReason: `版路追蹤：源自上期 [${lastDraw.slice(0,3).join(',')}...]` };
+    },
+    algoBalance({ data, gameDef, subModeId }) {
+        let bestSet = []; let bestReason = "";
+        const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null;
+        if (gameDef.type === 'digit' && subModeId === 'group') {
+            while(true) {
+                const set = this.calculateZone(data, 9, gameDef.count, true, 'balance_digit', [], {}, stats);
+                const sum = set.reduce((a,b)=>a + b.val, 0);
+                if (sum >= 10 && sum <= 20) { bestSet = set; bestReason = `結構分析：和值${sum} (黃金區間 10-20)`; break; }
+            }
+        } else {
+            let maxAttempts = 100;
+            while(maxAttempts-- > 0) {
+                const set = this.calculateZone(data, gameDef.range, gameDef.count, false, 'balance', [], {}, stats);
+                const vals = set.map(n=>n.val);
+                const ac = this.calcAC(vals);
+                if (ac >= 4) { bestSet = set; bestReason = `結構分析：AC值 ${ac} (複雜度優化)`; break; }
+            }
+            if(bestSet.length === 0) bestSet = this.calculateZone(data, gameDef.range, gameDef.count, false, 'random', [], {}, stats);
+            if (gameDef.type === 'power') { const z2 = this.calculateZone(data, gameDef.zone2, 1, true, 'random', [], {}, stats); bestSet = [...bestSet, ...z2]; }
+        }
+        return { numbers: bestSet, groupReason: bestReason || "結構平衡分析" };
+    },
+    algoAI({ data, gameDef }) {
+        const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null;
+        const pickZone1 = this.calculateZone(data, gameDef.range, gameDef.count, false, 'ai_weight', [], {}, stats);
+        let pickZone2 = [];
+        if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'ai_weight', [], {}, stats);
+        const avgScore = Math.round(pickZone1.reduce((a,b) => a + parseInt(b.tag.replace(/\D/g,'')||0), 0) / pickZone1.length);
+        return { numbers: [...pickZone1, ...pickZone2], groupReason: `趨勢分析：平均動能指數 ${avgScore} (滿分100)` };
+    },
 
-    // calculateZone - 完整標籤邏輯
+    // calculateZone - 移除Emoji，使用直白文字
     calculateZone(data, range, count, isSpecial, mode, lastDraw=[], customWeights={}, stats={}, wuxingContext={}) {
         const max = range; const min = (mode.includes('digit')) ? 0 : 1; 
         const totalDraws = stats ? stats.totalDraws : 0; const recentDrawsCount = 30;
@@ -340,11 +381,10 @@ const App = {
                 const isOdd = num % 2 !== 0; const isBig = num > max / 2;
                 tag = (isBig ? "大號" : "小號") + "/" + (isOdd ? "奇數" : "偶數"); 
             } else if (mode === 'wuxing') {
-                // Wuxing Tag Logic: 直接讀取 tagMap，確保沒有 "五行選號"
                 if (wuxingContext && wuxingContext.tagMap && wuxingContext.tagMap[num]) {
                     tag = wuxingContext.tagMap[num];
                 } else {
-                    tag = '流年運數'; // 萬一真的沒 map 到 (極低機率)
+                    tag = '流年運數'; 
                 }
             }
             resultWithTags.push({ val: num, tag: tag });
