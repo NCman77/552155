@@ -1,7 +1,7 @@
 /**
  * app.js
  * 核心邏輯層：負責資料處理、演算法運算、DOM 渲染與事件綁定
- * V25.2: 升級 AI Prompt 為資深國學易經術數專家指令，強化命理分析深度
+ * V25.3: 新增「姓名學模組」，整合康熙筆畫與五行聲韻選號邏輯
  */
 import { GAME_CONFIG } from './game_config.js';
 
@@ -69,18 +69,20 @@ const App = {
     renderProfileSelect() { document.getElementById('profile-select').innerHTML = '<option value="">請新增...</option>'+this.state.profiles.map(p=>`<option value="${p.id}">${p.name}</option>`).join(''); },
     deleteCurrentProfile() { const pid = document.getElementById('profile-select').value; if(pid && confirm('刪除?')) { this.deleteProfile(Number(pid)); document.getElementById('profile-select').value=""; this.onProfileChange(); } },
     
-    // --- 紫微斗數 & AI 核心 (深度升級版) ---
+    // --- 紫微斗數 & 姓名學 & AI 核心 (深度升級版) ---
     async generateAIFortune() { 
         const pid = document.getElementById('profile-select').value; 
         if(!pid||!this.state.apiKey) return alert("請選主角並設定Key"); 
         document.getElementById('ai-loading').classList.remove('hidden'); 
         document.getElementById('btn-calc-ai').disabled=true; 
+        
         const p = this.state.profiles.find(x=>x.id==pid); 
         const currentYear = new Date().getFullYear();
         const ganZhi = this.getGanZhi(currentYear);
-        
-        // 使用使用者提供的專業大師級指令
-        const prompt = `
+        const useName = document.getElementById('check-name') ? document.getElementById('check-name').checked : false;
+
+        // 基礎 Prompt: 紫微斗數
+        let prompt = `
         你現在是資深的國學易經術數領域專家，請詳細分析下面這個紫微斗數命盤，綜合使用三合紫微、飛星紫微、河洛紫微、欽天四化等各流派紫微斗數的分析技法，對命盤十二宮星曜分布、限流疊宮和各宮位間的飛宮四化進行細緻分析。
 
         請基於上述專業分析，針對 ${currentYear}年 (${ganZhi.gan}${ganZhi.zhi}年) 的流年財運進行「數值化轉譯」，找出該命主今年最強的『財氣數字』與『幸運尾數』。
@@ -88,13 +90,37 @@ const App = {
         命主資料：
         姓名：${p.name} (${p.realname})
         紫微斗數/星盤資料：${p.ziwei} ${p.astro}
+        `;
 
+        // 姓名學模組 Prompt (當使用者勾選姓名學時加入)
+        if (useName) {
+            prompt += `
+            【姓名學特別指令】
+            請同時以「資深姓名學專家」身份，對姓名「${p.realname || p.name}」進行嚴謹分析：
+            1. 筆畫標準：使用康熙筆畫表。
+            2. 五行判定：依序使用 五格 > 筆畫 > 聲韻 (木:ㄧ/火:ㄚ/土:ㄤ/金:ㄛ/水:ㄢ) > 字義。
+            3. 樂透映射規則：
+               - 木 (1,2,11,12...尾數1,2)
+               - 火 (3,4,13,14...尾數3,4)
+               - 土 (5,6,15,16...尾數5,6)
+               - 金 (7,8,17,18...尾數7,8)
+               - 水 (9,0,19,20...尾數9,0)
+            請分析該姓名之「喜用五行」以及「三才五格之吉數」，並將結果整合至下方 JSON。
+            `;
+        }
+
+        prompt += `
         請務必回傳純 JSON 格式 (不要有 Markdown 標記)，格式如下：
         {
             "year_analysis": "請在此提供約 200 字的精闢流年分析，結合命主特點與流年四化，給出具體的財運建議。",
             "monthly_elements": [
                 {"month": 1, "lucky_tails": [2,7], "lucky_elements": ["火"], "wealth_star": "武曲", "avoid": "忌星"}
-            ]
+            ],
+            "name_analysis": {
+                 "kangxi_strokes": 25,
+                 "lucky_elements": ["木", "火"],
+                 "rationale": "總格35(土)為大吉，喜木火相生。"
+            }
         }`; 
 
         try{ 
@@ -114,7 +140,11 @@ const App = {
         const d=document.getElementById('ai-result-display'); 
         if(p&&p.fortune2025){ 
             d.classList.remove('hidden'); 
-            d.innerHTML=`<div class="font-bold mb-1">📅 流年運勢:</div><p>${p.fortune2025.year_analysis}</p>`; 
+            let html = `<div class="font-bold mb-1">📅 流年運勢:</div><p>${p.fortune2025.year_analysis}</p>`;
+            if(p.fortune2025.name_analysis) {
+                html += `<div class="mt-2 pt-2 border-t border-pink-100"><div class="font-bold mb-1">✍️ 姓名靈動:</div><p class="text-[10px]">${p.fortune2025.name_analysis.rationale}</p></div>`;
+            }
+            d.innerHTML = html;
             document.getElementById('btn-calc-ai').innerText="🔄 重新批算"; 
             document.getElementById('btn-clear-ai').classList.remove('hidden'); 
         }else{ 
@@ -230,7 +260,7 @@ const App = {
         return stats;
     },
 
-    // 5. 五行生肖 - 邏輯升級：建立完整 tagMap
+    // 5. 五行生肖 - 邏輯升級：建立完整 tagMap (包含姓名學)
     algoWuxing({ gameDef }) {
         const currentYear = new Date().getFullYear();
         const ganZhi = this.getGanZhi(currentYear);
@@ -262,10 +292,11 @@ const App = {
             }
         });
 
-        // 3. Profile 加權
+        // 3. Profile 加權 (含姓名學)
         const pid = document.getElementById('profile-select').value;
         const profile = this.state.profiles.find(p => p.id == pid);
         if (profile && profile.fortune2025) {
+            // 紫微/流年尾數
             const mData = profile.fortune2025.monthly_elements?.[0];
             if(mData && mData.lucky_tails) { 
                 mData.lucky_tails.forEach(t => { 
@@ -277,6 +308,24 @@ const App = {
                     }
                 }); 
             }
+            
+            // 姓名學加權 (讀取 name_analysis)
+            const nameData = profile.fortune2025.name_analysis;
+            if (nameData && nameData.lucky_elements) {
+                // 姓名學邏輯：木(1,2) 火(3,4) 土(5,6) 金(7,8) 水(9,0)
+                const eleMap = { "木": [1,2], "火": [3,4], "土": [5,6], "金": [7,8], "水": [9,0] };
+                nameData.lucky_elements.forEach(ele => {
+                    const targets = eleMap[ele] || [];
+                    targets.forEach(t => {
+                        for(let i=1; i<=gameDef.range; i++) {
+                            if (i % 10 === t) {
+                                wuxingWeights[i] += 40; // 姓名權重高
+                                if (!wuxingTagMap[i].includes("化祿")) wuxingTagMap[i] = `📛姓名補${ele}`;
+                            }
+                        }
+                    });
+                });
+            }
         }
 
         const wuxingContext = { tagMap: wuxingTagMap };
@@ -284,33 +333,28 @@ const App = {
         let pickZone2 = [];
         if (gameDef.type === 'power') pickZone2 = this.calculateZone([], gameDef.zone2, 1, true, 'wuxing', [], wuxingWeights, null, wuxingContext);
         
-        // 動態評語：找出出現最多的星曜
+        // 動態評語
         const tags = [...pickZone1, ...pickZone2].map(o => o.tag);
         const dominant = tags.sort((a,b) => tags.filter(v => v===a).length - tags.filter(v => v===b).length).pop();
-        const starName = dominant.replace('化祿','').replace('正財','').replace('偏財','').replace('旺數','');
-        
+        const starName = dominant.replace('化祿','').replace('正財','').replace('偏財','').replace('旺數','').replace('姓名補','');
         let advice = "動能平穩，適合小額投注。";
         if(dominant.includes("化祿")) advice = "財星高照，氣場極強，建議積極佈局。";
-        else if(dominant.includes("偏財")) advice = "偏財運旺，適合博冷門號。";
-        else if(dominant.includes("正財")) advice = "正財穩健，適合定期定額。";
-
+        else if(dominant.includes("姓名")) advice = "姓名靈動加持，彌補先天缺憾。";
+        
         const groupReason = `💡 流年格局：[${dominant}] 主導 (占比${Math.round(tags.filter(t=>t===dominant).length/tags.length*100)}%)。<br>此局以「${starName}」為核心，${advice}`;
 
         return { numbers: [...pickZone1, ...pickZone2], groupReason: groupReason };
     },
 
-    // 其他學派邏輯 (全面升級 Group Reason)
+    // 其他學派邏輯 (保持不變)
     algoStat({ data, gameDef }) {
         const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null;
         const pickZone1 = this.calculateZone(data, gameDef.range, gameDef.count, false, 'stat', [], {}, stats);
         let pickZone2 = [];
         if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'stat_missing', [], {}, stats);
-        
-        // 計算冷熱比
         const nums = [...pickZone1, ...pickZone2];
         const hotCount = nums.filter(n => n.tag.includes('近')).length;
         const coldCount = nums.filter(n => n.tag.includes('遺漏') || n.tag.includes('回補')).length;
-        
         return { 
             numbers: nums, 
             groupReason: `🔥 熱力分析：熱號 ${hotCount} : 冷號 ${coldCount}。<br>本組採「順勢而為」策略，鎖定近期高頻區，搭配 ${coldCount} 顆極限冷號回補。`
@@ -323,10 +367,8 @@ const App = {
         const pickZone1 = this.calculateZone(data, gameDef.range, gameDef.count, false, 'pattern', lastDraw, {}, stats);
         let pickZone2 = [];
         if (gameDef.type === 'power') pickZone2 = this.calculateZone(data, gameDef.zone2, 1, true, 'random');
-        
         const nums = [...pickZone1, ...pickZone2];
         const dragCount = nums.filter(n => n.tag.includes('拖') || n.tag.includes('鄰') || n.tag.includes('連莊')).length;
-
         return { 
             numbers: nums, 
             groupReason: `🔗 版路分析：強烈連動局 (${dragCount}顆相關)。<br>高度符合上期 [${lastDraw.slice(0,3).join(',')}...] 之拖牌慣性，建議關注鄰號效應。` 
@@ -335,16 +377,11 @@ const App = {
     algoBalance({ data, gameDef, subModeId }) {
         let bestSet = []; let bestReason = "";
         const stats = data.length > 0 ? this.getLotteryStats(data, gameDef.range, gameDef.count) : null;
-        
         if (gameDef.type === 'digit' && subModeId === 'group') {
             while(true) {
                 const set = this.calculateZone(data, 9, gameDef.count, true, 'balance_digit', [], {}, stats);
                 const sum = set.reduce((a,b)=>a + b.val, 0);
-                if (sum >= 10 && sum <= 20) { 
-                    bestSet = set; 
-                    bestReason = `⚖️ 結構分析：黃金和值 ${sum}。<br>數字總和落在機率最高的 10-20 區間，符合常態分佈曲線。`; 
-                    break; 
-                }
+                if (sum >= 10 && sum <= 20) { bestSet = set; bestReason = `⚖️ 結構分析：黃金和值 ${sum}。<br>數字總和落在機率最高的 10-20 區間，符合常態分佈曲線。`; break; }
             }
         } else {
             let maxAttempts = 100;
@@ -353,11 +390,7 @@ const App = {
                 const vals = set.map(n=>n.val);
                 const ac = this.calcAC(vals);
                 const oddCount = vals.filter(n => n%2!==0).length;
-                if (ac >= 4) { 
-                    bestSet = set; 
-                    bestReason = `⚖️ 結構分析：AC值 ${ac} | 奇偶比 ${oddCount}:${vals.length-oddCount}。<br>本組號碼複雜度高，結構平衡，有效規避無效的極端組合。`; 
-                    break; 
-                }
+                if (ac >= 4) { bestSet = set; bestReason = `⚖️ 結構分析：AC值 ${ac} | 奇偶比 ${oddCount}:${vals.length-oddCount}。<br>本組號碼複雜度高，結構平衡，有效規避無效的極端組合。`; break; }
             }
             if(bestSet.length === 0) bestSet = this.calculateZone(data, gameDef.range, gameDef.count, false, 'random', [], {}, stats);
             if (gameDef.type === 'power') { const z2 = this.calculateZone(data, gameDef.zone2, 1, true, 'random', [], {}, stats); bestSet = [...bestSet, ...z2]; }
